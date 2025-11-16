@@ -10,6 +10,7 @@ export default function LoopxHiring() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleGoogleSignIn = async () => {
     try {
@@ -41,6 +42,34 @@ export default function LoopxHiring() {
   }
 
   const isEmailValid = email.trim() !== '' && isBusinessEmail(email)
+
+  const handleContinue = async () => {
+    if (!isEmailValid) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/send-magic-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        router.push(`/auth/verify?email=${encodeURIComponent(email)}`)
+      } else {
+        setEmailError(data.message || 'Failed to send verification email')
+      }
+    } catch (error) {
+      console.error('Error sending magic link:', error)
+      setEmailError('Failed to send verification email. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: 'var(--primary)' }}>
@@ -113,11 +142,12 @@ export default function LoopxHiring() {
           
       
           <button 
+            onClick={handleContinue}
             className="w-full text-white rounded-lg  py-3 px-4 mb-6 mt-2 transition"
-            style={{ backgroundColor: isEmailValid ? 'var(--active)' : 'var(--disabled)' }}
-            disabled={!isEmailValid}
+            style={{ backgroundColor: isEmailValid && !isLoading ? 'var(--active)' : 'var(--disabled)' }}
+            disabled={!isEmailValid || isLoading}
           >
-            Continue
+            {isLoading ? 'Sending...' : 'Continue'}
           </button>
           
      
