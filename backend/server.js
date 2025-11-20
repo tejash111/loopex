@@ -4,6 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth.routes');
+const onboardingRoutes = require('./routes/onboarding.routes');
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
