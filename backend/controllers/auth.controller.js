@@ -36,7 +36,7 @@ const signup = async (req, res) => {
 
         // Check if user already exists
         const existingUser = await User.findOne({ email: email.toLowerCase() });
-        
+
         // If user exists and is verified, don't allow signup
         if (existingUser && existingUser.verified) {
             return res.status(400).json({
@@ -60,7 +60,7 @@ const signup = async (req, res) => {
                 expiresAt: otpExpiresAt,
             };
             await existingUser.save();
-            
+
             // Send OTP email
             await sendOTPEmail(email, otp);
 
