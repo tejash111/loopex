@@ -15,12 +15,15 @@ connectDB();
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL?.split(',') || [
-        'https://loopex.vercel.app',
-        'http://localhost:3000'
+    origin: [
+        "https://loopex.vercel.app",
+        "http://localhost:3000"
     ],
-    credentials: true
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
