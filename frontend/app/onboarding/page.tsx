@@ -40,7 +40,7 @@ export default function Onboarding() {
     // Check if onboarding is already completed
     const checkOnboardingStatus = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/onboarding/status/${userId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -474,7 +474,7 @@ export default function Onboarding() {
               return
             }
 
-            const response = await fetch('http://localhost:5000/api/onboarding/submit', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/submit`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

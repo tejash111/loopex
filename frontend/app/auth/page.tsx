@@ -27,7 +27,7 @@ export default function LoopxHiring() {
       // Check onboarding status
       const checkStatus = async () => {
         try {
-          const response = await fetch(`http://localhost:5000/api/onboarding/status/${userId}`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status/${userId}`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -109,7 +109,7 @@ export default function LoopxHiring() {
     setIsLoading(true)
     try {
       const endpoint = isSignUp ? '/api/auth/signup' : '/api/auth/login'
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

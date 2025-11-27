@@ -147,7 +147,7 @@ export default function Dashboard() {
         return
       }
 
-      const response = await fetch('http://localhost:5000/api/projects', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
