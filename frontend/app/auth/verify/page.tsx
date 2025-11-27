@@ -1,11 +1,11 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Loader } from 'lucide-react'
 
-export default function VerifyEmail() {
+function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get('email') || ''
@@ -14,6 +14,7 @@ export default function VerifyEmail() {
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'error'>('pending')
   const [errorMessage, setErrorMessage] = useState('')
   const [resending, setResending] = useState(false)
+  const [countdown, setCountdown] = useState(0)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
@@ -22,6 +23,14 @@ export default function VerifyEmail() {
       inputRefs.current[0].focus()
     }
   }, [])
+
+  useEffect(() => {
+    // Countdown timer
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown])
 
   const handleOtpChange = (index: number, value: string) => {
     // Only allow digits
@@ -136,6 +145,7 @@ export default function VerifyEmail() {
       if (data.success) {
         setVerificationStatus('pending')
         setOtp(['', '', '', '', '', ''])
+        setCountdown(30)
         inputRefs.current[0]?.focus()
       } else {
         setErrorMessage(data.message || 'Failed to resend code')
@@ -160,7 +170,7 @@ export default function VerifyEmail() {
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: '#131316' }}>
  
-      <div className="w-1/2 px-16 pt-8 flex flex-col relative">
+      <div className="w-1/2 px-8 pt-4 flex flex-col relative">
 
         <div className="text-white mb-32" style={{ fontFamily: 'var(--font-heading)', fontSize: '32px', fontWeight: '400' }}>Loopx</div>
         
@@ -176,14 +186,57 @@ export default function VerifyEmail() {
               <>
                 Your email has been verified successfully. Redirecting you to the dashboard...
               </>
+            ) : countdown > 0 ? (
+              <>
+                <span style={{ 
+                  color: '#A0A0AB', 
+                  fontFamily: 'var(--font-body)', 
+                  fontSize: '14px',
+                  fontWeight: 400, 
+                  lineHeight: '20px',
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on"
+                }}>
+                  Resend code in 
+                </span>
+                <span style={{ 
+                  color: '#A48AFB', 
+                  fontFamily: 'var(--font-body)', 
+                  fontSize: '14px',
+                  fontWeight: 600, 
+                  lineHeight: '20px',
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  marginLeft: '4px'
+                }}>
+                  {countdown}s
+                </span>
+              </>
             ) : (
               <>
                 Check Your Email for the OTP <button
                   onClick={handleResendOTP}
                   disabled={resending}
-                  style={{ color: '#875BF7', fontFamily: 'var(--font-body)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  className="inline-flex items-center gap-1"
+                  style={{ 
+                    color: '#A48AFB', 
+                    fontFamily: 'var(--font-body)', 
+                    fontSize: '14px',
+                    fontWeight: 600, 
+                    lineHeight: '20px',
+                    fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer', 
+                    padding: 0 
+                  }}
                 >
-                  {resending ? 'Resending...' : 'Resend Code →'}
+                  {resending ? 'Resending...' : (
+                    <>
+                      Resend Code
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M3.33317 7.33353C2.96498 7.33353 2.6665 7.632 2.6665 8.0002C2.66655 8.36833 2.96501 8.66687 3.33317 8.66687H11.507C11.164 9.0492 10.7051 9.47933 10.2296 9.89213C9.74137 10.3161 9.25077 10.7093 8.88137 10.9976C8.6971 11.1414 8.32557 11.4259 8.21857 11.5067C7.96817 11.7335 7.9249 12.1175 8.12937 12.3954C8.3477 12.6917 8.76524 12.7554 9.0617 12.5373C9.17344 12.4529 9.51104 12.1978 9.70164 12.0491C10.0822 11.7521 10.5917 11.3429 11.1034 10.8987C11.6116 10.4573 12.1372 9.96807 12.5408 9.51127C12.742 9.28367 12.9273 9.0486 13.0656 8.8192C13.1929 8.60807 13.3332 8.3176 13.3332 8.0002L13.3266 7.8824C13.298 7.61153 13.1769 7.36653 13.0656 7.18187C12.9273 6.9524 12.742 6.7168 12.5408 6.48914C12.1372 6.03232 11.6116 5.54309 11.1034 5.10177C10.5917 4.65756 10.0822 4.24838 9.70164 3.95138C9.51104 3.80263 9.17344 3.54751 9.0617 3.4631C8.76524 3.24501 8.3483 3.30869 8.13004 3.60503C7.92537 3.88299 7.9681 4.26687 8.21857 4.4937C8.21857 4.4937 8.38324 4.62064 8.4367 4.66101C8.54364 4.74182 8.6971 4.85902 8.88137 5.00281C9.25077 5.2911 9.74137 5.68433 10.2296 6.10828C10.7051 6.52109 11.164 6.9512 11.507 7.33353H3.33317Z" fill="#A48AFB"/>
+                      </svg>
+                    </>
+                  )}
                 </button>
               </>
             )}
@@ -212,11 +265,15 @@ export default function VerifyEmail() {
                       border: errorMessage ? '1px solid #E88997' : (digit ? '1px solid #875BF7' : '1px solid #26272B'),
                       background: '#1A1A1E',
                       boxShadow: digit ? 'none' : '0 1px 2px 0 rgba(10, 13, 18, 0.05)',
-                      color: '#FFFFFF',
+                      color: digit ? '#FFFFFF' : '#70707B',
                       fontFamily: 'var(--font-body)',
-                      fontSize: '24px',
-                      fontWeight: '500',
+                      fontSize: digit ? '24px' : '20px',
+                      fontWeight: digit ? '500' : '400',
+                      lineHeight: digit ? 'normal' : '24px',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
                       textAlign: 'center',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
                       transition: 'border-color 0.2s ease'
                     }}
                     disabled={verifying}
@@ -246,7 +303,7 @@ export default function VerifyEmail() {
           )}
         
           <p style={{ color: 'var(--Text-Tertiary, #A0A0AB)', fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on", fontFamily: 'var(--font-body)', fontSize: '14px', fontStyle: 'normal', fontWeight: '400', lineHeight: '20px' }}>
-            Need help? <span className="cursor-pointer" style={{ color: '#875BF7', textDecoration: 'underline' }}>Contact support</span>
+            Need help? <span className="inline-flex items-center justify-center gap-1 cursor-pointer" style={{ color: '#A48AFB', fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, lineHeight: '20px', fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",  }}>Contact support</span>
           </p>
         </div>
         
@@ -301,4 +358,12 @@ export default function VerifyEmail() {
       </div>
     </div>
   );
+}
+
+export default function VerifyEmail() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center"><Loader className="animate-spin" /></div>}>
+      <VerifyEmailContent />
+    </Suspense>
+  )
 }

@@ -60,6 +60,8 @@ export default function Dashboard() {
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [showUploadJDModal, setShowUploadJDModal] = useState(false)
   const [activeFilterCategory, setActiveFilterCategory] = useState('location')
+  const [showProjectsDropdown, setShowProjectsDropdown] = useState(false)
+  const [projectSearchInput, setProjectSearchInput] = useState('')
   
   // Filter states
   const [preferredLocation, setPreferredLocation] = useState('')
@@ -109,7 +111,7 @@ export default function Dashboard() {
 
   // Scroll to section when clicking sidebar
   const scrollToSection = (key: string) => {
-    const refs: { [key: string]: React.RefObject<HTMLDivElement> } = {
+    const refs: { [key: string]: React.RefObject<HTMLDivElement | null> } = {
       location: locationRef,
       salary: salaryRef,
       experience: experienceRef,
@@ -126,20 +128,77 @@ export default function Dashboard() {
     }
   }
 
-  // Show modal if no projects exist
+  // Show modal if no projects exist and fetch projects on mount
+  useEffect(() => {
+    fetchUserProjects()
+  }, [])
+
   useEffect(() => {
     if (userProjects.length === 0) {
       setShowModal(true)
     }
   }, [userProjects.length])
 
-  const handleCreateProject = () => {
+  const fetchUserProjects = async () => {
+    try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        console.error('No auth token found')
+        return
+      }
+
+      const response = await fetch('http://localhost:5000/api/projects', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setUserProjects(data.projects.map((p: any) => p.name))
+        if (data.projects.length > 0 && !selectedProject) {
+          setSelectedProject(data.projects[0].name)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+    }
+  }
+
+  const handleCreateProject = async () => {
     if (projectName.trim()) {
-      const newProject = projectName.trim()
-      setUserProjects([...userProjects, newProject])
-      setSelectedProject(newProject)
-      setProjectName('')
-      setShowModal(false)
+      try {
+        const token = localStorage.getItem('authToken')
+        if (!token) {
+          console.error('No auth token found')
+          return
+        }
+
+        const response = await fetch('http://localhost:5000/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ name: projectName.trim() })
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          const newProject = projectName.trim()
+          setUserProjects([...userProjects, newProject])
+          setSelectedProject(newProject)
+          setProjectName('')
+          setShowModal(false)
+        } else {
+          alert(data.message || 'Failed to create project')
+        }
+      } catch (error) {
+        console.error('Error creating project:', error)
+        alert('Failed to create project. Please try again.')
+      }
     }
   }
 
@@ -181,13 +240,142 @@ export default function Dashboard() {
                   <span>All Projects</span>
                 </button>
                 {selectedProject && (
-                  <button
-                    className="w-full text-left px-4 py-2 flex items-center gap-3 text-[14px] transition text-[#a48afb] border rounded-lg border-[#26272b] "
-                  >
-                    <span style={{ color: '#A48AFB' }}>{projectIcon}</span>
-                    <span className="flex-1">{selectedProject}</span>
-                    <ChevronDown className="w-4 h-4" style={{ color: '#A48AFB' }} />
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowProjectsDropdown(!showProjectsDropdown)}
+                      className="w-full text-left px-4 py-2 flex items-center gap-3 text-[14px] transition text-[#a48afb] border rounded-lg border-[#26272b]"
+                    >
+                      <span style={{ color: '#A48AFB' }}>{projectIcon}</span>
+                      <span className="flex-1">{selectedProject}</span>
+                      <ChevronDown 
+                        className="w-4 h-4 transition-transform duration-200" 
+                        style={{ 
+                          color: '#A48AFB',
+                          transform: showProjectsDropdown ? 'rotate(180deg)' : 'rotate(0deg)'
+                        }} 
+                      />
+                    </button>
+
+                    {showProjectsDropdown && (
+                      <div 
+                        className="absolute left-0 mt-2 border z-50"
+                        style={{
+                          backgroundColor: '#131316',
+                          borderColor: '#26272B',
+                          borderRadius: '24px',
+                          borderWidth: '1px',
+                          width: '300px',
+                          padding: '16px'
+                        }}
+                      >
+                        {/* Search Input */}
+                        <div className="mb-1">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Find projects"
+                              value={projectSearchInput}
+                              onChange={(e) => setProjectSearchInput(e.target.value)}
+                              className="w-full px-4 py-2.5 rounded-lg focus:outline-none"
+                              style={{
+                                backgroundColor: '#131316',
+                                border: '1px solid #26272B',
+                                color: '#70707B',
+                                fontFamily: 'var(--font-body)',
+                                fontSize: '14px',
+                                fontWeight: 400,
+                                lineHeight: '20px'
+                              }}
+                            />
+                            <svg 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              width="20" 
+                              height="20" 
+                              viewBox="0 0 20 20" 
+                              fill="none"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                            >
+                              <path d="M17.5 17.5L13.875 13.875M15.8333 9.16667C15.8333 12.8486 12.8486 15.8333 9.16667 15.8333C5.48477 15.8333 2.5 12.8486 2.5 9.16667C2.5 5.48477 5.48477 2.5 9.16667 2.5C12.8486 2.5 15.8333 5.48477 15.8333 9.16667Z" stroke="#70707B" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                        </div>
+
+                      <div className='bg-[#1A1A1E] p-2 rounded-lg'>
+                        {/* Projects List */}
+                        <div 
+                          className="mb-3 max-h-[200px] overflow-y-auto"
+                          style={{
+                            scrollbarWidth: 'none',
+                            msOverflowStyle: 'none'
+                          }}
+                        >
+                          {userProjects
+                            .filter(project => 
+                              project.toLowerCase().includes(projectSearchInput.toLowerCase())
+                            )
+                            .map((project, index) => (
+                              <button
+                                key={index}
+                                onClick={() => {
+                                  setSelectedProject(project)
+                                  setShowProjectsDropdown(false)
+                                  setProjectSearchInput('')
+                                }}
+                                className="w-full text-left px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-3 mb-1"
+                                style={{
+                                  backgroundColor: selectedProject === project ? '#26272B' : 'transparent',
+                                  color: '#FFFFFF',
+                                  fontFamily: 'var(--font-body)',
+                                  fontSize: '14px',
+                                  fontWeight: 500,
+                                  lineHeight: '20px'
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (selectedProject !== project) {
+                                    e.currentTarget.style.backgroundColor = '#26272B'
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (selectedProject !== project) {
+                                    e.currentTarget.style.backgroundColor = 'transparent'
+                                  }
+                                }}
+                              >
+                                {project}
+                              </button>
+                            ))}
+                        </div>
+
+                        {/* New Project Button */}
+                        <div className="pt-2 border-t" style={{ borderColor: '#26272B' }}>
+                          <button
+                            onClick={() => {
+                              setShowProjectsDropdown(false)
+                              setShowModal(true)
+                              setProjectSearchInput('')
+                            }}
+                            className="w-full px-4 py-2.5 rounded-lg border border-[#3F3F46] flex items-center justify-center gap-2 transition-all duration-200"
+                            style={{
+                              backgroundColor: '#26272B',
+                              color: '#FFFFFF',
+                              fontFamily: 'var(--font-body)',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2F2F35'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#26272B'}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <path d="M8 3.33334V12.6667M3.33333 8H12.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span>New Project</span>
+                          </button>
+                        </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               <button className="mt-3 w-full rounded-lg py-2 text-[14px] font-medium text-white flex items-center justify-center gap-2" style={{ backgroundColor: '#875BF7' }}>
