@@ -3,30 +3,29 @@ const nodemailer = require('nodemailer');
 // Create transporter for Zoho SMTP
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.zoho.com',
-    port: parseInt(process.env.SMTP_PORT || '587'), // Port 587 for STARTTLS (Render-compatible)
-    secure: false, // Use STARTTLS instead of SSL/TLS
+    port: parseInt(process.env.SMTP_PORT || '465'), // Try port 465 (SSL) - often more reliable on Render
+    secure: process.env.SMTP_PORT === '465', // Use SSL for port 465
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
     },
     tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2' // Ensure TLS 1.2 minimum
     },
-    requireTLS: true, // Force STARTTLS
-    connectionTimeout: 10000, // 10 seconds timeout
-    greetingTimeout: 5000, // 5 seconds greeting timeout
-    family: 4 // Force IPv4 - important for Render deployment
+    requireTLS: true, // Force TLS
+    connectionTimeout: 30000, // 30 seconds - increased for Render
+    greetingTimeout: 10000, // 10 seconds greeting timeout
+    socketTimeout: 30000, // 30 seconds socket timeout
+    family: 4, // Force IPv4 - important for Render deployment
+    logger: process.env.NODE_ENV === 'production', // Enable logging in production
+    debug: process.env.NODE_ENV === 'production' // Enable debug in production
 });
 
 // Verify transporter configuration
 transporter.verify((error, success) => {
     if (error) {
         console.error('❌ SMTP connection error:', error.message);
-        console.log('\n📧 To fix Zoho SMTP authentication:');
-        console.log('1. Go to https://accounts.zoho.com/home#security/');
-        console.log('2. Enable "Two-Factor Authentication" if not already enabled');
-        console.log('3. Generate an "App-Specific Password" for SMTP');
-        console.log('4. Update SMTP_PASS in your .env file with the app password\n');
     } else {
         console.log('✅ SMTP server is ready to send emails');
     }
