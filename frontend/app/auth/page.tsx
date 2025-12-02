@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { isBusinessEmail, getEmailErrorMessage } from '@/utils/emailValidator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Loader } from 'lucide-react'
 
 export default function LoopxHiring() {
   const router = useRouter()
@@ -254,7 +255,7 @@ export default function LoopxHiring() {
             style={{ marginTop: '24px', marginBottom: '32px' }}
             disabled={!isFormValid || isLoading}
           >
-            {isLoading ? (isSignUp ? 'Creating account...' : 'Signing in...') : (isSignUp ? 'Continue' : 'Sign in')}
+            {isLoading ? <Loader className='animate-spin'/> : (isSignUp ? 'Continue' : 'Sign in')}
           </Button>
           <p style={{ color: 'var(--Text-Tertiary, #A0A0AB)', fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on", fontFamily: 'var(--font-body)', fontSize: 'var(--Font-size-text-sm, 14px)', fontStyle: 'normal', fontWeight: '400', lineHeight: 'var(--Line-height-text-sm, 20px)', marginBottom: '16px' }}>
             By signing up, you agree to the <span style={{ color: 'var(--Text-Tertiary, #A0A0AB)', fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on", fontFamily: 'var(--font-body)', fontSize: 'var(--Font-size-text-sm, 14px)', fontStyle: 'normal', fontWeight: '400', lineHeight: 'var(--Line-height-text-sm, 20px)', textDecoration: 'underline', cursor: 'pointer' }}>Terms of Service</span> and{' '}
