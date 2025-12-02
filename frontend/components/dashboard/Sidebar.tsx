@@ -68,7 +68,7 @@ export default function Sidebar({
   const [projectSearchInput, setProjectSearchInput] = useState('')
 
   return (
-    <aside className={`w-[220px] mr-[16px]  flex flex-col justify-between border-white/5 transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`}>
+    <aside className={`fixed left-0 top-0 bg-[#1A1A1E] w-[220px]  h-screen flex flex-col justify-between transition-all duration-300 overflow-y-auto overflow-x-hidden z-10 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`} style={{ padding: '12px 16px' }}>
       <div>
         <div className="text-white text-2xl mb-[20px]" style={{ fontFamily: 'var(--font-heading)' }}>
           Loopx
@@ -259,10 +259,9 @@ export default function Sidebar({
               {generalLinks.map((link) => (
                 <button 
                   key={link.label} 
-                  className="flex font-body items-center justify-between transition" 
+                  className="flex font-body items-center justify-between transition w-full" 
                   style={{ 
                     display: 'flex',
-                    width: '220px',
                     height: '40px',
                     padding: '2px 0',
                     alignItems: 'center'
@@ -310,10 +309,9 @@ export default function Sidebar({
           {supportLinks.map((link) => (
             <button 
               key={link.label} 
-              className="flex items-center transition" 
+              className="flex items-center transition w-full" 
               style={{ 
                 display: 'flex',
-                width: '220px',
                 height: '40px',
                 padding: '2px 0',
                 alignItems: 'center'

@@ -86,9 +86,7 @@ export default function Dashboard() {
 
       if (data.success) {
         setUserProjects(data.projects.map((p: any) => p.name))
-        if (data.projects.length > 0 && !selectedProject) {
-          setSelectedProject(data.projects[0].name)
-        }
+        // Don't auto-select any project on dashboard
       }
     } catch (error) {
       console.error('Error fetching projects:', error)
@@ -104,7 +102,7 @@ export default function Dashboard() {
           return
         }
 
-        const response = await fetch('http://localhost:5000/api/projects', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -134,8 +132,7 @@ export default function Dashboard() {
   // Removed unused useMemo hooks that referenced non-existent functions
 
   return (
-    <div className="min-h-screen flex px-[16px] py-[12px]" style={{ backgroundColor: '#1a1a1e' }}>
-      {/* Sidebar */}
+    <>
       <Sidebar
         showModal={showModal}
         showFilterModal={showFilterModal}
@@ -145,20 +142,22 @@ export default function Dashboard() {
         onProjectSelect={setSelectedProject}
       />
 
-      {/* Main content */}
-      <main className={`flex-1 relative overflow-hidden bg-[#131316] rounded-2xl transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`}>
-        <div className="relative z-10 h-full flex flex-col items-center justify-center text-white">
-          <EmptyState />
-          <SearchBar
-            searchInput={searchInput}
-            setSearchInput={setSearchInput}
-            onFilterClick={() => setShowFilterModal(true)}
-            onUploadJDClick={() => setShowUploadJDModal(true)}
-          />
-        </div>
-      </main>
+      <div className="min-h-screen ml-[236px]">
+        {/* Main content */}
+        <main className={`min-h-screen relative overflow-hidden transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`} style={{ backgroundColor: '#131316', borderRadius: '16px 0 0 16px' }}>
+          <div className="relative z-10 min-h-screen flex flex-col items-center justify-center text-white">
+            <EmptyState />
+            <SearchBar
+              searchInput={searchInput}
+              setSearchInput={setSearchInput}
+              onFilterClick={() => setShowFilterModal(true)}
+              onUploadJDClick={() => setShowUploadJDModal(true)}
+            />
+          </div>
+        </main>
+      </div>
 
-      {/* Modals */}
+      {/* Modals - outside of blurred content */}
       <ProjectModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
@@ -176,6 +175,6 @@ export default function Dashboard() {
         isOpen={showUploadJDModal} 
         onClose={() => setShowUploadJDModal(false)} 
       />
-    </div>
+    </>
   )
 }

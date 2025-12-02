@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { uploadToCloudinary } from '@/utils/cloudinary'
 
 export default function Onboarding() {
   const router = useRouter()
@@ -25,6 +26,8 @@ export default function Onboarding() {
   const [showBusinessCategoryDropdown, setShowBusinessCategoryDropdown] = useState(false)
   const [showRoleDropdown, setShowRoleDropdown] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [logoUploadError, setLogoUploadError] = useState('')
 
   // Check if user is authenticated and hasn't completed onboarding
   useEffect(() => {
@@ -67,12 +70,19 @@ export default function Onboarding() {
   }, [])
 
   // Mock company data - in real app, this would come from an API
-  const companies = useMemo(() => [
-    'Red Bull',
-    'Red Hat', 
-    'Redfin',
-    'Reddit'
-  ], [])
+  const companyData: Record<string, { foundedYear: string; fundingStage: string; industry: string; businessCategory: string; logoUrl: string }> = useMemo(() => ({
+    'Red Bull': { foundedYear: '1987', fundingStage: 'Public', industry: 'E-commerce', businessCategory: 'B2C', logoUrl: '' },
+    'Red Hat': { foundedYear: '1993', fundingStage: 'Public', industry: 'SaaS', businessCategory: 'Enterprise', logoUrl: '' },
+    'Redfin': { foundedYear: '2004', fundingStage: 'Public', industry: 'E-commerce', businessCategory: 'B2C', logoUrl: '' },
+    'Reddit': { foundedYear: '2005', fundingStage: 'Public', industry: 'SaaS', businessCategory: 'B2C', logoUrl: '' }
+  }), [])
+
+  const companies = useMemo(() => Object.keys(companyData), [companyData])
+  
+  // Check if selected company exists in our database
+  const isExistingCompany = useMemo(() => {
+    return companies.some(c => c.toLowerCase() === selectedCompany.toLowerCase())
+  }, [companies, selectedCompany])
 
   const filteredCompanies = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -108,9 +118,24 @@ export default function Onboarding() {
 
   const handleCompanySelect = (company : string) => {
     setSelectedCompany(company)
-    setFoundedYear('')     // reset here ONLY when user actually selects a company
     setSearchQuery(company)
     setShowDropdown(false)
+    
+    // If company exists in our database, auto-fill data and go to step 3
+    const existingData = companyData[company]
+    if (existingData) {
+      setFoundedYear(existingData.foundedYear)
+      setFundingStage(existingData.fundingStage)
+      setIndustry(existingData.industry)
+      setBusinessCategory(existingData.businessCategory)
+      if (existingData.logoUrl) {
+        setLogoUrl(existingData.logoUrl)
+      }
+      // Skip directly to step 3
+      setStep(3)
+    } else {
+      setFoundedYear('')
+    }
   }
 
   const handleAddCompany = () => {
@@ -121,32 +146,51 @@ export default function Onboarding() {
     setShowDropdown(false)
   }
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setLogoUrl(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setLogoUploadError('Please select an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoUploadError('Image size should be less than 5MB')
+      return
+    }
+
+    setIsUploadingLogo(true)
+    setLogoUploadError('')
+
+    try {
+      const result = await uploadToCloudinary(file)
+      setLogoUrl(result.secure_url)
+    } catch (error) {
+      console.error('Error uploading logo:', error)
+      setLogoUploadError(error instanceof Error ? error.message : 'Failed to upload logo')
+    } finally {
+      setIsUploadingLogo(false)
     }
   }
 
   const handleNextFromStepOne = () => {
     // Basic validation check before proceeding
-    if (!selectedCompany || !foundedYear) {
+    if (!selectedCompany) {
       return
     }
     setStep(2)
   }
 
   const handleSubmitStepTwo = () => {
-    if (!(fundingStage && industry && businessCategory)) return
+    if (!(foundedYear && fundingStage && industry && businessCategory)) return
     setStep(3)
   }
 
-  const isStepOneValid = Boolean(selectedCompany && foundedYear)
-  const isStepTwoValid = Boolean(fundingStage && industry && businessCategory)
+  const isStepOneValid = Boolean(selectedCompany)
+  const isStepTwoValid = Boolean(foundedYear && fundingStage && industry && businessCategory)
   const isStepThreeValid = Boolean(fullName.trim() && role)
 
   const fundingStages = ['Bootstrapped', 'Pre-Seed', 'Seed', 'Series A', 'Series B+', 'Public']
@@ -159,47 +203,9 @@ export default function Onboarding() {
         <p style={{ color: 'var(--Text-Tertiary, #A0A0AB)', fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on", fontFamily: 'var(--Font-family-font-family-text, "Inter Display")', fontSize: 'var(--Font-size-text-md, 16px)', fontStyle: 'normal', fontWeight: '400', lineHeight: 'var(--Line-height-text-md, 24px)' }}>Step 1 of 3</p>
       </div>
 
-      <h2 style={{ color: 'var(--Text-Primary, #FFF)', fontFamily: 'var(--Font-family-font-family-display, "Denton Test")', fontSize: 'var(--Font-size-display-xs, 24px)', fontStyle: 'normal', fontWeight: '500', lineHeight: 'var(--Line-height-display-xs, 32px)' }}>
+      <h2 style={{ color: 'var(--Text-Primary, #FFF)', fontFamily: 'var(--Font-family-font-family-display, "Denton Test")', fontSize: 'var(--Font-size-display-xs, 24px)', fontStyle: 'normal', fontWeight: '500', lineHeight: 'var(--Line-height-display-xs, 32px)', marginBottom: '32px' }}>
         Start Hiring with Loopx
       </h2>
-
-      <div className="mb-6 ">
-        <div className="flex items-center gap-4">
-          <div 
-            className="w-16 h-16 mt-[32px] rounded-2xl flex items-center justify-center cursor-pointer relative overflow-hidden"
-            style={{ backgroundColor: 'var(--active)' }}
-            onClick={() => document.getElementById('logo-upload')?.click()}
-          >
-            <img src={logoUrl || "/avatar.jpg"} alt="" className="w-full h-full object-cover" />
-          </div>
-          <button 
-            style={{
-              display: 'flex',
-              padding: 'var(--spacing-md, 8px) var(--spacing-lg, 12px)',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 'var(--spacing-xs, 4px)',
-              borderRadius: 'var(--radius-lg, 10px)',
-              border: '0.5px solid var(--Border-Secondary, #26272B)',
-              background: 'var(--Surface-Secondary, #1A1A1E)',
-              color: 'var(--Text-Brand-primary, #A48AFB)',
-              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-              fontFamily: 'var(--body)',
-              fontSize: 'var(--Font-size-text-sm, 14px)',
-              fontStyle: 'normal',
-              fontWeight: '600',
-              lineHeight: 'var(--Line-height-text-sm, 20px)',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onClick={() => document.getElementById('logo-upload')?.click()}
-            className='mt-6'
-          >
-            Replace logo
-          </button>
-          <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-        </div>
-      </div>
 
       <div className="mb-6 relative dropdown-container">
         <div className="relative">
@@ -259,52 +265,6 @@ export default function Onboarding() {
                 Add '{searchQuery.trim()}'
               </button>
             )}
-          </div>
-        )}
-      </div>
-
-      <div className="mb-8 relative dropdown-container">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Founded year"
-            value={foundedYear}
-            disabled={!selectedCompany}
-            readOnly
-            onClick={() => selectedCompany && setShowFoundedYearDropdown(!showFoundedYearDropdown)}
-            className="w-full text-white rounded-xl py-3.5 px-4 pr-12 focus:outline-none transition placeholder:text-[#8d8d8f] cursor-pointer"
-            style={{ 
-              backgroundColor: '#1b1b1f',
-              border: showFoundedYearDropdown ? '2px solid var(--active)' : '2px solid #2b2b33'
-            }}
-          />
-          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[#70707b]" />
-        </div>
-
-        {showFoundedYearDropdown && (
-          <div 
-            className="absolute w-full mt-2 rounded-xl overflow-hidden z-20 max-h-60 overflow-y-auto"
-            style={{ 
-              backgroundColor: '#131318', 
-              boxShadow: '0 20px 45px rgba(0,0,0,0.4)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              padding: '12px 0'
-            }}
-          >
-            {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
-              <div
-                key={year}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setFoundedYear(year.toString())
-                  setShowFoundedYearDropdown(false)
-                }}
-                className="px-6 py-3 cursor-pointer text-white hover:bg-[#1f1f26] transition"
-                style={{ color: '#FFFFFF', fontSize: '16px' }}
-              >
-                {year}
-              </div>
-            ))}
           </div>
         )}
       </div>
@@ -389,9 +349,101 @@ export default function Onboarding() {
         <p style={{ color: 'var(--Text-Tertiary, #A0A0AB)', fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on", fontFamily: 'var(--Font-family-font-family-text, "Inter Display")', fontSize: 'var(--Font-size-text-md, 16px)', fontStyle: 'normal', fontWeight: '400', lineHeight: 'var(--Line-height-text-md, 24px)' }}>Step 2 of 3</p>
       </div>
 
-      <h2 style={{ color: 'var(--Text-Primary, #FFF)', fontFamily: 'var(--Font-family-font-family-display, "Denton Test")', fontSize: 'var(--Font-size-display-xs, 24px)', fontStyle: 'normal', fontWeight: '500', lineHeight: 'var(--Line-height-display-xs, 32px)', marginBottom: '32px' }}>
+      <h2 style={{ color: 'var(--Text-Primary, #FFF)', fontFamily: 'var(--Font-family-font-family-display, "Denton Test")', fontSize: 'var(--Font-size-display-xs, 24px)', fontStyle: 'normal', fontWeight: '500', lineHeight: 'var(--Line-height-display-xs, 32px)' }}>
         Start Hiring with Loopx
       </h2>
+
+      <div className="mb-6">
+        <div className="flex items-center gap-4">
+          <div 
+            className="w-16 h-16 mt-8 rounded-2xl flex items-center justify-center cursor-pointer relative overflow-hidden"
+            style={{ backgroundColor: 'var(--active)' }}
+            onClick={() => !isUploadingLogo && document.getElementById('logo-upload')?.click()}
+          >
+            {isUploadingLogo ? (
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <img src={logoUrl || "/avatar.jpg"} alt="" className="w-full h-full object-cover" />
+            )}
+          </div>
+          <button 
+            style={{
+              display: 'flex',
+              padding: 'var(--spacing-md, 8px) var(--spacing-lg, 12px)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 'var(--spacing-xs, 4px)',
+              borderRadius: 'var(--radius-lg, 10px)',
+              border: '0.5px solid var(--Border-Secondary, #26272B)',
+              background: 'var(--Surface-Secondary, #1A1A1E)',
+              color: 'var(--Text-Brand-primary, #A48AFB)',
+              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+              fontFamily: 'var(--body)',
+              fontSize: 'var(--Font-size-text-sm, 14px)',
+              fontStyle: 'normal',
+              fontWeight: '600',
+              lineHeight: 'var(--Line-height-text-sm, 20px)',
+              cursor: isUploadingLogo ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              opacity: isUploadingLogo ? 0.6 : 1
+            }}
+            onClick={() => !isUploadingLogo && document.getElementById('logo-upload')?.click()}
+            className='mt-6'
+            disabled={isUploadingLogo}
+          >
+            {isUploadingLogo ? 'Uploading...' : 'Replace logo'}
+          </button>
+          <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+        </div>
+        {logoUploadError && (
+          <p className="text-red-400 text-sm mt-2">{logoUploadError}</p>
+        )}
+      </div>
+
+      <div className="mb-4 relative dropdown-container">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Founded year"
+            value={foundedYear}
+            readOnly
+            onClick={() => setShowFoundedYearDropdown(!showFoundedYearDropdown)}
+            className="w-full text-white rounded-xl py-3.5 px-4 pr-12 focus:outline-none transition placeholder:text-[#8d8d8f] cursor-pointer"
+            style={{ 
+              backgroundColor: '#1b1b1f',
+              border: showFoundedYearDropdown ? '2px solid var(--active)' : '2px solid #2b2b33'
+            }}
+          />
+          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[#70707b]" />
+        </div>
+
+        {showFoundedYearDropdown && (
+          <div 
+            className="absolute w-full mt-2 rounded-xl overflow-hidden z-20 max-h-60 overflow-y-auto"
+            style={{ 
+              backgroundColor: '#131318', 
+              boxShadow: '0 20px 45px rgba(0,0,0,0.4)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '12px 0'
+            }}
+          >
+            {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
+              <div
+                key={year}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setFoundedYear(year.toString())
+                  setShowFoundedYearDropdown(false)
+                }}
+                className="px-6 py-3 cursor-pointer text-white hover:bg-[#1f1f26] transition"
+                style={{ color: '#FFFFFF', fontSize: '16px' }}
+              >
+                {year}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col gap-4 mb-8">
         {renderSelect('Funding Stage', fundingStage, setFundingStage, fundingStages, showFundingStageDropdown, setShowFundingStageDropdown)}
@@ -414,7 +466,7 @@ export default function Onboarding() {
 
   const renderStepThree = () => (
     <>
-      <button className="text-sm mb-4 flex items-center gap-2" style={{ color: 'var(--active)' }} onClick={() => setStep(2)}>
+      <button className="text-sm mb-4 flex items-center gap-2" style={{ color: 'var(--active)' }} onClick={() => setStep(isExistingCompany ? 1 : 2)}>
         <span>←</span> Back
       </button>
 

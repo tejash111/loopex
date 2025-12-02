@@ -1,7 +1,6 @@
 @font-face {
   font-family: 'Denton Test';
-  src: url('/fonts/DentonTest-Regular.woff2') format('woff2'),
-       url('/fonts/DentonTest-Regular.woff') format('woff');
+  src: url('/Denton.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -9,8 +8,7 @@
 
 @font-face {
   font-family: 'Denton Test';
-  src: url('/fonts/DentonTest-Medium.woff2') format('woff2'),
-       url('/fonts/DentonTest-Medium.woff') format('woff');
+  src: url('/Denton.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -18,8 +16,7 @@
 
 @font-face {
   font-family: 'Denton Test';
-  src: url('/fonts/DentonTest-Bold.woff2') format('woff2'),
-       url('/fonts/DentonTest-Bold.woff') format('woff');
+  src: url('/Denton.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -27,8 +24,7 @@
 
 @font-face {
   font-family: 'Inter Display';
-  src: url('/fonts/InterDisplay-Regular.woff2') format('woff2'),
-       url('/fonts/InterDisplay-Regular.woff') format('woff');
+  src: url('/interDisplay.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -36,8 +32,7 @@
 
 @font-face {
   font-family: 'Inter Display';
-  src: url('/fonts/InterDisplay-Medium.woff2') format('woff2'),
-       url('/fonts/InterDisplay-Medium.woff') format('woff');
+  src: url('/interDisplay.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -45,8 +40,7 @@
 
 @font-face {
   font-family: 'Inter Display';
-  src: url('/fonts/InterDisplay-SemiBold.woff2') format('woff2'),
-       url('/fonts/InterDisplay-SemiBold.woff') format('woff');
+  src: url('/interDisplay.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -54,8 +48,7 @@
 
 @font-face {
   font-family: 'Inter Display';
-  src: url('/fonts/InterDisplay-Bold.woff2') format('woff2'),
-       url('/fonts/InterDisplay-Bold.woff') format('woff');
+  src: url('/interDisplay.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -64,7 +57,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #131316;
+  --background: #1A1A1E;
   --foreground: #ffffff;
   --brand-50: #faf5ff;
   --brand-100: #f3e8ff;
@@ -127,14 +120,14 @@
   --accent-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #26272b;
+  --border: #3F3F46;
   --input: #1a1a1e;
   --ring: #875bf7;
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: #131316;
+  --background: #1A1A1E;
   --foreground: #ffffff;
   --card: #1a1a1e;
   --card-foreground: #ffffff;
