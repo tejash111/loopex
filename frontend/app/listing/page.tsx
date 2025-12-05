@@ -67,6 +67,8 @@ const Listing = () => {
   const [error, setError] = useState('')
   const [showProjectsDropdown, setShowProjectsDropdown] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [activeTab, setActiveTab] = useState('Overview')
 
   // Fetch user projects and restore selected project on mount
   useEffect(() => {
@@ -128,56 +130,43 @@ const Listing = () => {
   }, [showProjectsDropdown])
 
   // Filter candidates based on search query
+  // Note: When searchQuery is provided, server already returns filtered results via AI-powered search
+  // We only apply client-side filtering when server-side search is not available
   const filteredCandidates = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return candidates
-    }
-    
-    const query = searchQuery.toLowerCase()
-    
-    return candidates.filter((candidate) => {
-      // Search in name
-      if (candidate.name?.toLowerCase().includes(query)) return true
-      
-      // Search in position/title
-      if (candidate.position?.toLowerCase().includes(query)) return true
-      
-      // Search in company
-      if (candidate.company?.toLowerCase().includes(query)) return true
-      
-      // Search in location
-      if (candidate.location?.toLowerCase().includes(query)) return true
-      
-      // Search in education
-      if (candidate.education?.toLowerCase().includes(query)) return true
-      
-      // Search in description
-      if (candidate.description?.toLowerCase().includes(query)) return true
-      
-      // Search in skills/highlights
-      if (candidate.highlights?.some((skill: string) => 
-        skill?.toLowerCase().includes(query)
-      )) return true
-      
-      return false
-    })
-  }, [candidates, searchQuery])
+    // Server-side search already handles filtering with fuzzy matching
+    // Just return the candidates as-is since they're already filtered by the API
+    return candidates
+  }, [candidates])
 
-  // Fetch profiles data from backend
+  // Fetch profiles data from backend using natural language search
   useEffect(() => {
     const fetchCandidates = async () => {
       try {
         setLoading(true)
 
-        // Build URL with optional search query
-        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/profile`)
-        if (searchQuery) {
-          url.searchParams.append('query', searchQuery)
-        }
+        let response;
+        let data;
 
-        const response = await fetch(url.toString(), {
-          credentials: 'include'
-        })
+        // Use the AI-powered search endpoint if there's a search query
+        if (searchQuery && searchQuery.trim()) {
+          response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/search`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ 
+              query: searchQuery.trim(),
+              limit: 50,
+              skip: 0
+            })
+          })
+        } else {
+          // Fallback to regular profile endpoint for no search query
+          response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile`, {
+            credentials: 'include'
+          })
+        }
 
         if (!response.ok) {
           if (response.status === 401) {
@@ -189,7 +178,7 @@ const Listing = () => {
           return
         }
 
-        const data = await response.json()
+        data = await response.json()
         
         // Transform profile data to candidate card format
         if (data.success && Array.isArray(data.data)) {
@@ -205,9 +194,15 @@ const Listing = () => {
             highlights: profile.skills?.flatMap((s: any) => s.skills).slice(0, 4) || [],
             availability: 'Immediately',
             salary: '10 - 15 LPA',
-            socials: profile.socials || {}
+            socials: profile.socials || {},
+            score: profile.score || 0 // Include the relevance score from search
           }))
           setCandidates(transformedCandidates)
+          
+          // Log search metadata if available
+          if (data.meta?.parsedFilters) {
+            console.log('[Search] Parsed filters:', data.meta.parsedFilters)
+          }
         } else {
           setCandidates([])
         }
@@ -275,8 +270,13 @@ const Listing = () => {
         onProjectSelect={setSelectedProject}
         showProjectsDropdown={showProjectsDropdown}
         onShowProjectsDropdownChange={setShowProjectsDropdown}
+        isCollapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
       />
-      <div className="min-h-screen rounded-[24px] flex px-[16px] py-[12px] bg-[#131316] ml-[252px]" style={{ backgroundColor: '#131316' }}>
+      <div 
+        className="min-h-screen rounded-[24px] flex px-[16px] py-[12px] bg-[#131316] transition-all duration-300" 
+        style={{ backgroundColor: '#131316', marginLeft: sidebarCollapsed ? '88px' : '252px' }}
+      >
       <main className={`flex-1 flex relative overflow-hidden bg-[#161619]  border border-[#26272B] rounded-[20px] transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`}>
               {/* Left side - Candidate List */}
               <div className='flex-1 overflow-y-auto hide-scrollbar' style={{ maxHeight: 'calc(100vh - 48px)' }}>
@@ -714,9 +714,23 @@ const Listing = () => {
                   cursor: 'pointer'
                 }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M15.5625 12.3125C15.7006 12.3125 15.8125 12.4245 15.8125 12.5625C15.8125 13.2409 15.815 13.6334 15.7275 13.96C15.4963 14.8224 14.8223 15.4953 13.96 15.7266C13.6334 15.8141 13.241 15.8125 12.5625 15.8125H5.4375C4.75921 15.8125 4.36749 15.814 4.04102 15.7266C3.17849 15.4955 2.50474 14.8225 2.27344 13.96C2.18594 13.6334 2.1875 13.241 2.1875 12.5625C2.1875 12.4245 2.29949 12.3125 2.4375 12.3125C2.57555 12.3125 2.6875 12.4245 2.6875 12.5625C2.6875 13.2726 2.68968 13.5831 2.75586 13.8301C2.94078 14.5202 3.47973 15.0592 4.16992 15.2441C4.41685 15.3102 4.72747 15.3125 5.4375 15.3125H12.5645L13.0332 15.3115H13.0361C13.4134 15.3077 13.6344 15.2966 13.8301 15.2441C14.5202 15.0592 15.0592 14.5203 15.2441 13.8301C15.3104 13.583 15.3125 13.2725 15.3125 12.5625C15.3125 12.4245 15.4245 12.3125 15.5625 12.3125Z" fill="#A48AFB" stroke="#A48AFB"/>
-                    <path d="M9.00009 1.6875C8.58587 1.6875 8.25009 2.02328 8.25009 2.4375V10.3946C8.02202 10.1657 7.78074 9.90451 7.54547 9.63353C7.19064 9.22486 6.86099 8.81356 6.61898 8.50343C6.49828 8.34878 6.297 8.08253 6.22933 7.99291C5.98376 7.65946 5.51401 7.58783 5.1805 7.83323C4.84707 8.07878 4.77545 8.54858 5.02083 8.88211C5.09256 8.97706 5.3099 9.26453 5.43611 9.42623C5.68788 9.74888 6.03488 10.1816 6.41243 10.6165C6.78686 11.0477 7.20656 11.4983 7.60119 11.8469C7.79762 12.0205 8.00567 12.185 8.21274 12.3098C8.39927 12.4223 8.68014 12.5625 9.00009 12.5625C9.32004 12.5625 9.60092 12.4223 9.78744 12.3098C9.99452 12.185 10.2026 12.0205 10.399 11.8469C10.7936 11.4983 11.2133 11.0477 11.5877 10.6165C11.9653 10.1816 12.3122 9.74888 12.564 9.42623C12.6902 9.26453 12.9076 8.97706 12.9793 8.88211C13.2247 8.54858 13.1531 8.07953 12.8197 7.83398C12.4862 7.58836 12.0164 7.65938 11.7708 7.99291C11.7032 8.08253 11.5019 8.34878 11.3812 8.50343C11.1392 8.81348 10.8095 9.22486 10.4546 9.63353C10.2194 9.90443 9.97817 10.1657 9.75009 10.3946V2.4375C9.75009 2.02329 9.41432 1.68752 9.00009 1.6875Z" fill="#A48AFB"/>
-                  </svg>
+  <path d="M15.5625 12.3125C15.7006 12.3125 15.8125 12.4245 15.8125 12.5625C15.8125 13.2409 15.815 13.6334 15.7275 13.96C15.4963 14.8224 14.8223 15.4953 13.96 15.7266C13.6334 15.8141 13.241 15.8125 12.5625 15.8125H5.4375C4.75921 15.8125 4.36749 15.814 4.04102 15.7266C3.17849 15.4955 2.50474 14.8225 2.27344 13.96C2.18594 13.6334 2.1875 13.241 2.1875 12.5625C2.1875 12.4245 2.29949 12.3125 2.4375 12.3125C2.57555 12.3125 2.6875 12.4245 2.6875 12.5625C2.6875 13.2726 2.68968 13.5831 2.75586 13.8301C2.94078 14.5202 3.47973 15.0592 4.16992 15.2441C4.41685 15.3102 4.72747 15.3125 5.4375 15.3125H12.5645L13.0332 15.3115H13.0361C13.4134 15.3077 13.6344 15.2966 13.8301 15.2441C14.5202 15.0592 15.0592 14.5203 15.2441 13.8301C15.3104 13.583 15.3125 13.2725 15.3125 12.5625C15.3125 12.4245 15.4245 12.3125 15.5625 12.3125Z" fill="#A48AFB" stroke="#A48AFB"/>
+  <path d="M9.00009 1.6875C8.58587 1.6875 8.25009 2.02328 8.25009 2.4375V10.3946C8.02202 10.1657 7.78074 9.90451 7.54547 9.63353C7.19064 9.22486 6.86099 8.81356 6.61898 8.50343C6.49828 8.34878 6.297 8.08253 6.22933 7.99291C5.98376 7.65946 5.51401 7.58783 5.1805 7.83323C4.84707 8.07878 4.77545 8.54858 5.02083 8.88211C5.09256 8.97706 5.3099 9.26453 5.43611 9.42623C5.68788 9.74888 6.03488 10.1816 6.41243 10.6165C6.78686 11.0477 7.20656 11.4983 7.60119 11.8469C7.79762 12.0205 8.00567 12.185 8.21274 12.3098C8.39927 12.4223 8.68014 12.5625 9.00009 12.5625C9.32004 12.5625 9.60092 12.4223 9.78744 12.3098C9.99452 12.185 10.2026 12.0205 10.399 11.8469C10.7936 11.4983 11.2133 11.0477 11.5877 10.6165C11.9653 10.1816 12.3122 9.74888 12.564 9.42623C12.6902 9.26453 12.9076 8.97706 12.9793 8.88211C13.2247 8.54858 13.1531 8.07953 12.8197 7.83398C12.4862 7.58836 12.0164 7.65938 11.7708 7.99291C11.7032 8.08253 11.5019 8.34878 11.3812 8.50343C11.1392 8.81348 10.8095 9.22486 10.4546 9.63353C10.2194 9.90443 9.97817 10.1657 9.75009 10.3946V2.4375C9.75009 2.02329 9.41432 1.68752 9.00009 1.6875Z" fill="#A48AFB"/>
+</svg>
+                </button>
+                <button style={{
+                  display: 'flex',
+                  padding: '6px',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '8px',
+                  border: '0.5px solid #26272B',
+                  background: '#1A1A1E',
+                  cursor: 'pointer'
+                }}>
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+  <path d="M11.25 4.5C11.25 4.5 6.75001 7.81418 6.75 9C6.74999 10.1859 11.25 13.5 11.25 13.5" stroke="#A48AFB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
                 </button>
                 <button style={{
                   display: 'flex',
@@ -729,22 +743,8 @@ const Listing = () => {
                   cursor: 'pointer'
                 }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M12 14L6 9L12 4" stroke="#70707B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                <button style={{
-                  display: 'flex',
-                  padding: '6px',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderRadius: '8px',
-                  border: '0.5px solid #26272B',
-                  background: '#1A1A1E',
-                  cursor: 'pointer'
-                }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M6 14L12 9L6 4" stroke="#875BF7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+  <path d="M6.75004 4.5C6.75004 4.5 11.25 7.81418 11.25 9C11.25 10.1859 6.75 13.5 6.75 13.5" stroke="#A48AFB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
                 </button>
               </div>
             </div>
@@ -827,18 +827,27 @@ const Listing = () => {
               gap: '0',
               width: '100%'
             }}>
-              {['Overview', 'Experience', 'Education', 'Skill'].map((tab, index) => (
+              {['Overview', 'Experience', 'Education', 'Skill'].map((tab) => (
                 <button
                   key={tab}
+                  onClick={() => setActiveTab(tab)}
                   style={{
-                    padding: '8px 16px',
-                    background: index === 0 ? '#26272B' : 'transparent',
-                    border: 'none',
-                    borderRadius: index === 0 ? '8px' : '0',
-                    color: index === 0 ? '#FFF' : '#70707B',
+                    display: 'flex',
+                    height: '36px',
+                    padding: '8px 12px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '8px',
+                    flex: '1 0 0',
+                    borderRadius: activeTab === tab ? '10px' : '0',
+                    border: activeTab === tab ? '0.5px solid #26272B' : 'none',
+                    background: activeTab === tab ? '#1A1A1E' : 'transparent',
+                    color: activeTab === tab ? '#FFF' : '#70707B',
                     fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
                     fontSize: '14px',
+                    fontStyle: 'normal',
                     fontWeight: 500,
+                    lineHeight: '20px',
                     cursor: 'pointer'
                   }}
                 >
@@ -870,7 +879,7 @@ const Listing = () => {
             gap: '12px', 
             width: '100%',
             padding: '16px',
-            background: '#131316',
+            background: '#1A1A1E',
             borderRadius: '12px'
           }}>
             <p style={{
@@ -883,7 +892,7 @@ const Listing = () => {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button style={{
                 display: 'flex',
-                padding: '8px 16px',
+                padding: '8px 12px',
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: '8px',
@@ -894,13 +903,14 @@ const Listing = () => {
                 flex: 1
               }}>
                 <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Shortlist</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 1L10.163 5.27865L15 6.03688L11.5 9.35983L12.326 14L8 11.7787L3.674 14L4.5 9.35983L1 6.03688L5.837 5.27865L8 1Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <path d="M2 13.9993L5.33333 10.666" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
               </button>
               <button style={{
                 display: 'flex',
-                padding: '8px 16px',
+                padding: '8px 12px',
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: '8px',
@@ -910,16 +920,28 @@ const Listing = () => {
                 cursor: 'pointer',
                 flex: 1
               }}>
-                <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Bookmark</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M3 12.4317V6.47169C3 4.04944 3 2.83831 3.78104 2.08631C4.56209 1.3343 5.81905 1.3343 8.33297 1.3343C10.8469 1.3343 12.1039 1.3343 12.8849 2.08631C13.666 2.83831 13.666 4.04944 13.666 6.47169V12.4317C13.666 13.9689 13.666 14.7375 13.1515 15.0125C12.1537 15.545 10.2821 13.7679 9.39442 13.2326C8.87897 12.9223 8.62124 12.7671 8.33297 12.7671C8.0447 12.7671 7.78697 12.9223 7.27152 13.2326C6.38386 13.7679 4.51232 15.545 3.51446 15.0125C3 14.7375 3 13.9689 3 12.4317Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <div className='flex  justify-between'>
+      <div className='flex gap-2'>
+            <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Bookmark</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <path d="M2.66699 11.9879V6.47234C2.66699 4.05009 2.66699 2.83897 3.44804 2.08648C4.22909 1.33398 5.48617 1.33398 8.00033 1.33398C10.5145 1.33398 11.7716 1.33398 12.5526 2.08648C13.3337 2.83897 13.3337 4.05009 13.3337 6.47234V11.9879C13.3337 13.5251 13.3337 14.2937 12.8185 14.5689C11.8207 15.1016 9.94913 13.3241 9.06033 12.7889C8.54486 12.4785 8.28713 12.3233 8.00033 12.3233C7.71353 12.3233 7.45579 12.4785 6.94033 12.7889C6.05153 13.3241 4.17997 15.1016 3.18223 14.5689C2.66699 14.2937 2.66699 13.5251 2.66699 11.9879Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M2.66699 4.66602H13.3337" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+      </div>
+
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+  <path d="M15 7.50004C15 7.50004 11.3176 12.5 10 12.5C8.68233 12.5 5 7.5 5 7.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+                </div>
+      
               </button>
             </div>
           </div>
 
           {/* Work Experience Section */}
-          <div style={{ 
+          <div 
+          className='p-[16px] bg-[#131316] border-[0.5px] border-[#26272B] rounded-[16px]'
+          style={{ 
             display: 'flex', 
             flexDirection: 'column', 
             gap: '16px', 
@@ -1020,7 +1042,9 @@ const Listing = () => {
           </div>
 
           {/* Education Section */}
-          <div style={{ 
+          <div 
+          className='p-[16px] bg-[#131316] border-[0.5px] border-[#26272B] rounded-[16px]'
+          style={{ 
             display: 'flex', 
             flexDirection: 'column', 
             gap: '12px', 
@@ -1038,7 +1062,7 @@ const Listing = () => {
               display: 'flex', 
               gap: '12px',
               padding: '12px',
-              background: '#131316',
+              background: '#1A1A1E',
               borderRadius: '12px'
             }}>
               <div style={{
@@ -1068,7 +1092,9 @@ const Listing = () => {
           </div>
 
           {/* Skills Section */}
-          <div style={{ 
+          <div 
+          className='p-[16px] bg-[#131316] border-[0.5px] border-[#26272B] rounded-[16px]'
+          style={{ 
             display: 'flex', 
             flexDirection: 'column', 
             gap: '12px', 
@@ -1128,7 +1154,9 @@ const Listing = () => {
           </div>
 
           {/* Languages Section */}
-          <div style={{ 
+          <div 
+          className='p-[16px] bg-[#131316] border-[0.5px] border-[#26272B] rounded-[16px]'
+          style={{ 
             display: 'flex', 
             flexDirection: 'column', 
             gap: '12px', 

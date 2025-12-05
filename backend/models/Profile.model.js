@@ -55,6 +55,7 @@ const ProfileSchema = new mongoose.Schema(
             currentTenure: { type: String }, // "7 yrs 2 mos"
             totalExperience: { type: String }, // "24 yrs 8 mos"
         },
+        profileEmbedding: { type: [Number], default: [] },
     },
     { timestamps: true }
 );

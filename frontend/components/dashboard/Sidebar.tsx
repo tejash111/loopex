@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const newProjectIcon = <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
   <path fill-rule="evenodd" clip-rule="evenodd" d="M13.3125 8.8125C13.7267 8.8125 14.0625 9.14835 14.0625 9.5625V11.8125H16.3125C16.7267 11.8125 17.0625 12.1484 17.0625 12.5625C17.0625 12.9767 16.7267 13.3125 16.3125 13.3125H14.0625V15.5625C14.0625 15.9767 13.7267 16.3125 13.3125 16.3125C12.8983 16.3125 12.5625 15.9767 12.5625 15.5625V13.3125H10.3125C9.89828 13.3125 9.5625 12.9767 9.5625 12.5625C9.5625 12.1484 9.89828 11.8125 10.3125 11.8125H12.5625V9.5625C12.5625 9.14835 12.8983 8.8125 13.3125 8.8125Z" fill="#A0A0AB"/>
@@ -58,7 +58,14 @@ interface SidebarProps {
   onProjectSelect: (project: string) => void
   showProjectsDropdown: boolean
   onShowProjectsDropdownChange: (show: boolean) => void
+  isCollapsed?: boolean
+  onCollapsedChange?: (collapsed: boolean) => void
 }
+
+const toggleIcon = <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+  <path fillRule="evenodd" clipRule="evenodd" d="M15 14.25C14.5858 14.25 14.25 13.9142 14.25 13.5V4.5C14.25 4.08578 14.5858 3.75 15 3.75C15.4142 3.75 15.75 4.08578 15.75 4.5V13.5C15.75 13.9142 15.4142 14.25 15 14.25Z" fill="#A48AFB"/>
+  <path d="M2.9999 9.7497C2.58568 9.7497 2.2499 9.41393 2.2499 8.9997C2.2499 8.58548 2.58568 8.2497 2.9999 8.2497H8.24998V7.43453C8.2499 7.15005 8.24975 6.85508 8.28575 6.62123C8.32423 6.37125 8.44145 5.9367 8.89798 5.7225C9.3497 5.51055 9.75373 5.691 9.9731 5.82248C10.1738 5.94278 10.3969 6.1293 10.6096 6.3072L10.6449 6.33668C11.0747 6.69585 11.5605 7.12605 11.9447 7.53533C12.1357 7.73873 12.3187 7.95488 12.4585 8.16803C12.5794 8.35238 12.75 8.65343 12.75 9C12.75 9.34658 12.5794 9.64755 12.4585 9.8319C12.3187 10.0451 12.1357 10.2612 11.9447 10.4647C11.5605 10.8739 11.0747 11.3041 10.6449 11.6633L10.6096 11.6928C10.3969 11.8707 10.1739 12.0572 9.9731 12.1775C9.75373 12.309 9.3497 12.4895 8.89798 12.2775C8.44153 12.0633 8.3243 11.6287 8.28583 11.3788C8.24983 11.145 8.2499 10.85 8.24998 10.5654V9.7497H2.9999Z" fill="#A48AFB"/>
+</svg>
 
 export default function Sidebar({
   showModal,
@@ -68,35 +75,92 @@ export default function Sidebar({
   onNewProject,
   onProjectSelect,
   showProjectsDropdown,
-  onShowProjectsDropdownChange
+  onShowProjectsDropdownChange,
+  isCollapsed = false,
+  onCollapsedChange
 }: SidebarProps) {
   const [projectSearchInput, setProjectSearchInput] = useState('')
+  const [localCollapsed, setLocalCollapsed] = useState(false)
+
+  // Handle responsive collapse at 1000px
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 1000) {
+        setLocalCollapsed(true)
+        onCollapsedChange?.(true)
+      } else {
+        setLocalCollapsed(false)
+        onCollapsedChange?.(false)
+      }
+    }
+
+    // Initial check
+    handleResize()
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [onCollapsedChange])
+
+  const collapsed = isCollapsed || localCollapsed
+
+  const handleToggle = () => {
+    const newCollapsed = !collapsed
+    setLocalCollapsed(newCollapsed)
+    onCollapsedChange?.(newCollapsed)
+  }
 
   return (
-    <aside className={`fixed left-0 top-0 bg-[#1A1A1E] w-[220px] h-screen flex flex-col justify-between transition-all duration-300  z-10 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`} style={{ padding: '12px 16px'}}>
+    <aside className={`fixed left-0 top-0 bg-[#1A1A1E] h-screen flex flex-col justify-between transition-all duration-300 z-10 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`} style={{ padding: '12px 16px', width: collapsed ? '56px' : '220px' }}>
       <div>
-        <div className="text-white text-2xl mb-[20px]" style={{ fontFamily: 'var(--font-heading)' }}>
-          Loopx
+        {/* Logo and Toggle Button Row */}
+        <div className="flex items-center justify-between mb-[20px]">
+          {!collapsed && (
+            <div className="text-white text-2xl" style={{ fontFamily: 'var(--font-heading)' }}>
+              Loopx
+            </div>
+          )}
+          <button
+            onClick={handleToggle}
+            className="flex items-center justify-center transition-all duration-200"
+            style={{
+              display: 'flex',
+              padding: '6px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderRadius: '8px',
+              border: '0.5px solid #26272B',
+              background: '#1A1A1E',
+              cursor: 'pointer',
+              transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)'
+            }}
+          >
+            {toggleIcon}
+          </button>
         </div>
 
+        {/* Content Section */}
         <div className="space-y-6">
           <div>
-            <p className="text-[11px] h-[24px] font-body text-[14px] px-[12px] pb-[4px]" style={{ color: '#70707B' }}>Projects</p>
+            {!collapsed && (
+              <p className="text-[11px] h-[24px] font-body text-[14px] px-[12px] pb-[4px]" style={{ color: '#70707B' }}>Projects</p>
+            )}
             <div className="space-y-1">
               <button
                 onClick={onNewProject}
-                className="w-full text-left px-4 py-2 flex items-center gap-3 text-[14px] transition text-[#A1A1AA] hover:text-white"
+                className={`w-full text-left flex items-center text-[14px] transition text-[#A1A1AA] hover:text-white ${collapsed ? 'justify-center py-2' : 'px-4 py-2 gap-3'}`}
+                title={collapsed ? 'New Project' : undefined}
               >
                 <span>{newProjectIcon}</span>
-                <span>New Project</span>
+                {!collapsed && <span>New Project</span>}
               </button>
               <button
-                className="w-full text-left px-4 py-2 flex items-center gap-3 text-[14px] transition text-[#A1A1AA] hover:text-white"
+                className={`w-full text-left flex items-center text-[14px] transition text-[#A1A1AA] hover:text-white ${collapsed ? 'justify-center py-2' : 'px-4 py-2 gap-3'}`}
+                title={collapsed ? 'All Projects' : undefined}
               >
                 <span>{allProjectsIcon}</span>
-                <span>All Projects</span>
+                {!collapsed && <span>All Projects</span>}
               </button>
-              {selectedProject && (
+              {selectedProject && !collapsed && (
                 <div className="relative z-50">
                   <button
                     onClick={() => onShowProjectsDropdownChange(!showProjectsDropdown)}
@@ -235,23 +299,30 @@ export default function Sidebar({
                 </div>
               )}
             </div>
-            <button className="mt-3 w-full rounded-lg py-2 text-[14px] font-bold text-white flex items-center justify-center gap-2" style={{ backgroundColor: '#875BF7' }}>
-                New search
+            <button 
+              className={`mt-3 w-full rounded-lg py-2 text-[14px] font-bold text-white flex items-center justify-center ${collapsed ? '' : 'gap-2'}`} 
+              style={{ backgroundColor: '#875BF7' }}
+              title={collapsed ? 'New search' : undefined}
+            >
+              {!collapsed && 'New search'}
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M3.24982 11.5278C3.24982 7.23227 6.73205 3.75003 11.0276 3.75003C11.5645 3.75003 11.9998 4.18531 11.9998 4.72226C11.9998 5.2592 11.5645 5.69448 11.0276 5.69448C7.80593 5.69448 5.19426 8.30616 5.19426 11.5278C5.19426 14.7495 7.80593 17.3612 11.0276 17.3612C14.2493 17.3612 16.8609 14.7495 16.8609 11.5278C16.8609 10.9909 17.2962 10.5556 17.8331 10.5556C18.3701 10.5556 18.8054 10.9909 18.8054 11.5278C18.8054 13.3252 18.1957 14.9801 17.1719 16.2972L20.4651 19.5903C20.8447 19.97 20.8447 20.5856 20.4651 20.9653C20.0854 21.345 19.4698 21.345 19.0901 20.9653L15.797 17.6721C14.4799 18.696 12.825 19.3056 11.0276 19.3056C6.73205 19.3056 3.24982 15.8234 3.24982 11.5278Z" fill="white"/>
+  <path fillRule="evenodd" clipRule="evenodd" d="M3.24982 11.5278C3.24982 7.23227 6.73205 3.75003 11.0276 3.75003C11.5645 3.75003 11.9998 4.18531 11.9998 4.72226C11.9998 5.2592 11.5645 5.69448 11.0276 5.69448C7.80593 5.69448 5.19426 8.30616 5.19426 11.5278C5.19426 14.7495 7.80593 17.3612 11.0276 17.3612C14.2493 17.3612 16.8609 14.7495 16.8609 11.5278C16.8609 10.9909 17.2962 10.5556 17.8331 10.5556C18.3701 10.5556 18.8054 10.9909 18.8054 11.5278C18.8054 13.3252 18.1957 14.9801 17.1719 16.2972L20.4651 19.5903C20.8447 19.97 20.8447 20.5856 20.4651 20.9653C20.0854 21.345 19.4698 21.345 19.0901 20.9653L15.797 17.6721C14.4799 18.696 12.825 19.3056 11.0276 19.3056C6.73205 19.3056 3.24982 15.8234 3.24982 11.5278Z" fill="white"/>
   <path d="M15.5 2.75003C15.8138 2.75003 16.0945 2.94543 16.2034 3.23975L16.4613 3.93678C16.8233 4.91513 16.9388 5.18094 17.1289 5.37109C17.3191 5.56124 17.5849 5.6767 18.5633 6.03872L19.2603 6.29664C19.5546 6.40555 19.75 6.6862 19.75 7.00003C19.75 7.31386 19.5546 7.59451 19.2603 7.70342L18.5633 7.96134C17.5849 8.32336 17.3191 8.43882 17.1289 8.62897C16.9388 8.81912 16.8233 9.08493 16.4613 10.0633L16.2034 10.7603C16.0945 11.0546 15.8138 11.25 15.5 11.25C15.1862 11.25 14.9055 11.0546 14.7966 10.7603L14.5387 10.0633C14.1767 9.08493 14.0612 8.81912 13.8711 8.62897C13.6809 8.43882 13.4151 8.32336 12.4367 7.96134L11.7397 7.70342C11.4454 7.59451 11.25 7.31386 11.25 7.00003C11.25 6.6862 11.4454 6.40555 11.7397 6.29664L12.4367 6.03872C13.4151 5.6767 13.6809 5.56124 13.8711 5.37109C14.0612 5.18094 14.1767 4.91513 14.5387 3.93678L14.7966 3.23975C14.9055 2.94543 15.1862 2.75003 15.5 2.75003Z" fill="white"/>
 </svg>
             
             </button>
-            <div className="flex justify-center" style={{ marginTop: '20px', marginBottom: '20px' }}>
-              <div style={{ 
-                width: '196px', 
-                height: '1px', 
-                background: 'linear-gradient(90deg, var(--Border-Primary, #1A1A1E) 0%, var(--Border-Secondary, #26272B) 50%, var(--Border-Primary, #1A1A1E) 100%)' 
-              }} />
-            </div>
+            {!collapsed && (
+              <div className="flex justify-center" style={{ marginTop: '20px', marginBottom: '20px' }}>
+                <div style={{ 
+                  width: '196px', 
+                  height: '1px', 
+                  background: 'linear-gradient(90deg, var(--Border-Primary, #1A1A1E) 0%, var(--Border-Secondary, #26272B) 50%, var(--Border-Primary, #1A1A1E) 100%)' 
+                }} />
+              </div>
+            )}
           </div>
 
+          {!collapsed && (
           <div>
             <p 
               className="flex items-center font-body" 
@@ -314,6 +385,28 @@ export default function Sidebar({
               ))}
             </div>
           </div>
+          )}
+
+          {/* General section icons when collapsed */}
+          {collapsed && (
+            <div className="space-y-1 mt-4">
+              {generalLinks.map((link) => (
+                <button 
+                  key={link.label} 
+                  className="flex items-center justify-center transition w-full"
+                  style={{ 
+                    display: 'flex',
+                    height: '40px',
+                    padding: '2px 0',
+                    alignItems: 'center'
+                  }}
+                  title={link.label}
+                >
+                  <span className="text-lg">{link.icon}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -322,25 +415,28 @@ export default function Sidebar({
           {supportLinks.map((link) => (
             <button 
               key={link.label} 
-              className="flex items-center transition w-full" 
+              className={`flex items-center transition w-full ${collapsed ? 'justify-center' : ''}`}
               style={{ 
                 display: 'flex',
                 height: '40px',
                 padding: '2px 0',
                 alignItems: 'center'
               }}
+              title={collapsed ? link.label : undefined}
             >
               <span 
                 className="flex items-center"
                 style={{ 
                   display: 'flex',
-                  padding: '8px 12px',
+                  padding: collapsed ? '8px' : '8px 12px',
                   alignItems: 'center',
-                  gap: '12px',
-                  flex: '1 0 0'
+                  gap: collapsed ? '0' : '12px',
+                  flex: collapsed ? undefined : '1 0 0',
+                  justifyContent: collapsed ? 'center' : undefined
                 }}
               >
                 <span className="text-lg">{link.icon}</span>
+                {!collapsed && (
                 <span 
                   className="font-body"
                   style={{ 
@@ -356,6 +452,7 @@ export default function Sidebar({
                 >
                   {link.label}
                 </span>
+                )}
               </span>
             </button>
           ))}
