@@ -59,6 +59,7 @@ export default function Dashboard() {
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [showUploadJDModal, setShowUploadJDModal] = useState(false)
   const [showProjectsDropdown, setShowProjectsDropdown] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const handleSearch = (query: string) => {
     // Navigate to listing page with search query
@@ -180,9 +181,11 @@ export default function Dashboard() {
         onProjectSelect={setSelectedProject}
         showProjectsDropdown={showProjectsDropdown}
         onShowProjectsDropdownChange={setShowProjectsDropdown}
+        isCollapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
       />
 
-      <div className="min-h-screen ml-[236px]">
+      <div className="min-h-screen transition-all duration-300" style={{ marginLeft: sidebarCollapsed ? '72px' : '256px' }}>
         {/* Main content */}
         <main className={`min-h-screen relative overflow-hidden transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`} style={{ backgroundColor: '#131316', borderRadius: '16px 0 0 16px' }}>
           <div className="relative z-10 min-h-screen flex flex-col items-center justify-center text-white">

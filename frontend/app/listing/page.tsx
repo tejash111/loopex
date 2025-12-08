@@ -60,7 +60,9 @@ const Listing = () => {
   const [showModal, setShowModal] = useState(false)
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [userProjects, setUserProjects] = useState<string[]>([])
+  const [projectsData, setProjectsData] = useState<{_id: string, name: string}[]>([])
   const [projectName, setProjectName] = useState('')
   const [candidates, setCandidates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,6 +71,8 @@ const Listing = () => {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
+  const [shortlistedProfiles, setShortlistedProfiles] = useState<Set<string>>(new Set())
+  const [shortlistLoading, setShortlistLoading] = useState<string | null>(null)
 
   // Fetch user projects and restore selected project on mount
   useEffect(() => {
@@ -85,9 +89,19 @@ const Listing = () => {
         }
 
         const data = await response.json()
-        if (data.success && Array.isArray(data.data)) {
-          const projectNames = data.data.map((project: { name: string }) => project.name)
+        if (data.success && Array.isArray(data.projects)) {
+          const projectNames = data.projects.map((project: { name: string }) => project.name)
           setUserProjects(projectNames)
+          setProjectsData(data.projects.map((p: {id: string, name: string}) => ({ _id: p.id, name: p.name })))
+          
+          // Restore selected project from localStorage and set the ID
+          const savedProject = localStorage.getItem('selectedProject')
+          if (savedProject) {
+            const project = data.projects.find((p: {name: string, id: string}) => p.name === savedProject)
+            if (project) {
+              setSelectedProjectId(project.id)
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching projects:', error)
@@ -114,8 +128,23 @@ const Listing = () => {
     if (userProjects.length > 0 && !selectedProject) {
       setSelectedProject(userProjects[0])
       localStorage.setItem('selectedProject', userProjects[0])
+      // Also set the project ID
+      const project = projectsData.find(p => p.name === userProjects[0])
+      if (project) {
+        setSelectedProjectId(project._id)
+      }
     }
-  }, [userProjects.length, userProjects, selectedProject])
+  }, [userProjects.length, userProjects, selectedProject, projectsData])
+
+  // Update projectId when selected project changes
+  useEffect(() => {
+    if (selectedProject && projectsData.length > 0) {
+      const project = projectsData.find(p => p.name === selectedProject)
+      if (project) {
+        setSelectedProjectId(project._id)
+      }
+    }
+  }, [selectedProject, projectsData])
 
   // Persist selected project to localStorage
   useEffect(() => {
@@ -236,6 +265,11 @@ const Listing = () => {
           const newProject = projectName.trim()
           setUserProjects([...userProjects, newProject])
           setSelectedProject(newProject)
+          // Also update projectsData with the new project
+          if (data.project) {
+            setProjectsData([...projectsData, data.project])
+            setSelectedProjectId(data.project._id)
+          }
           setProjectName('')
           setShowModal(false)
         } else {
@@ -245,6 +279,81 @@ const Listing = () => {
         console.error('Error creating project:', error)
         alert('Failed to create project. Please try again.')
       }
+    }
+  }
+
+  // Fetch shortlist status for all candidates when project changes
+  useEffect(() => {
+    const fetchShortlistStatus = async () => {
+      if (!selectedProjectId || candidates.length === 0) return
+
+      try {
+        const profileIds = candidates.map(c => c.id)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/shortlist/batch-status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ profileIds, projectId: selectedProjectId })
+        })
+
+        const data = await response.json()
+        if (data.success && data.shortlistMap) {
+          const shortlistedSet = new Set<string>()
+          Object.entries(data.shortlistMap).forEach(([id, isShortlisted]) => {
+            if (isShortlisted) {
+              shortlistedSet.add(id)
+            }
+          })
+          setShortlistedProfiles(shortlistedSet)
+        }
+      } catch (error) {
+        console.error('Error fetching shortlist status:', error)
+      }
+    }
+
+    fetchShortlistStatus()
+  }, [selectedProjectId, candidates])
+
+  // Toggle shortlist status for a profile
+  const handleToggleShortlist = async (profileId: string) => {
+    if (!selectedProjectId) {
+      alert('Please select a project first')
+      return
+    }
+
+    setShortlistLoading(profileId)
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/shortlist/toggle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ profileId, projectId: selectedProjectId })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setShortlistedProfiles(prev => {
+          const newSet = new Set(prev)
+          if (data.isShortlisted) {
+            newSet.add(profileId)
+          } else {
+            newSet.delete(profileId)
+          }
+          return newSet
+        })
+      } else {
+        alert(data.message || 'Failed to update shortlist')
+      }
+    } catch (error) {
+      console.error('Error toggling shortlist:', error)
+      alert('Failed to update shortlist')
+    } finally {
+      setShortlistLoading(null)
     }
   }
 
@@ -275,7 +384,7 @@ const Listing = () => {
       />
       <div 
         className="min-h-screen rounded-[24px] flex px-[16px] py-[12px] bg-[#131316] transition-all duration-300" 
-        style={{ backgroundColor: '#131316', marginLeft: sidebarCollapsed ? '88px' : '252px' }}
+        style={{ backgroundColor: '#131316', marginLeft: sidebarCollapsed ? '72px' : '256px' }}
       >
       <main className={`flex-1 flex relative overflow-hidden bg-[#161619]  border border-[#26272B] rounded-[20px] transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`}>
               {/* Left side - Candidate List */}
@@ -491,6 +600,11 @@ const Listing = () => {
                         {/* Right side - Buttons */}
                         <div className='flex items-center gap-[12px]'>
                           <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleShortlist(candidate.id);
+                            }}
+                            disabled={shortlistLoading === candidate.id}
                             style={{
                               display: 'flex',
                               padding: 'var(--spacing-sm, 6px) var(--spacing-md, 8px)',
@@ -500,7 +614,8 @@ const Listing = () => {
                               borderRadius: 'var(--radius-md, 8px)',
                               background: 'var(--Surface-Brand-Primary, #875BF7)',
                               border: 'none',
-                              cursor: 'pointer'
+                              cursor: shortlistLoading === candidate.id ? 'wait' : 'pointer',
+                              opacity: shortlistLoading === candidate.id ? 0.7 : 1
                             }}
                           >
                             <span style={{
@@ -512,10 +627,17 @@ const Listing = () => {
                               fontWeight: 600,
                               lineHeight: 'var(--Line-height-text-xs, 18px)'
                             }}>Shortlist</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                              <path d="M2 14.0003L5.33333 10.667" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
+                            {shortlistedProfiles.has(candidate.id) ? (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M2 14.0003L5.33333 10.667" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M2 14.0003L5.33333 10.667" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
                           </button>
                           <button 
                             style={{
@@ -890,23 +1012,34 @@ const Listing = () => {
               margin: 0
             }}>Manage profile</p>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button style={{
-                display: 'flex',
-                padding: '8px 12px',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '8px',
-                borderRadius: '8px',
-                background: '#875BF7',
-                border: 'none',
-                cursor: 'pointer',
-                flex: 1
-              }}>
+              <button 
+                onClick={() => selectedCandidate && handleToggleShortlist(selectedCandidate.id)}
+                disabled={shortlistLoading === selectedCandidate?.id}
+                style={{
+                  display: 'flex',
+                  padding: '8px 12px',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '8px',
+                  borderRadius: '8px',
+                  background: '#875BF7',
+                  border: 'none',
+                  cursor: shortlistLoading === selectedCandidate?.id ? 'wait' : 'pointer',
+                  opacity: shortlistLoading === selectedCandidate?.id ? 0.7 : 1,
+                  flex: 1
+                }}>
                 <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Shortlist</span>
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M2 13.9993L5.33333 10.666" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+                {selectedCandidate && shortlistedProfiles.has(selectedCandidate.id) ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 13.9993L5.33333 10.666" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 13.9993L5.33333 10.666" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
               </button>
               <button style={{
                 display: 'flex',
@@ -957,21 +1090,99 @@ const Listing = () => {
 
             {/* Experience Stats */}
             <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ color: '#70707B', fontSize: '12px' }}>Average tenure</span>
-                <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>
+              <div style={{ 
+                display: 'flex', 
+                padding: '12px',
+                flexDirection: 'column', 
+                alignItems: 'flex-start',
+                gap: '6px',
+                flex: '1 0 0',
+                borderRadius:  '12px',
+                border: '0.5px solid #26272B',
+                background: '#1A1A1E'
+              }}>
+                <span style={{ 
+                  color: '#70707B', 
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '12px',
+                  fontStyle: 'normal',
+                  fontWeight: 500,
+                  lineHeight: '18px'
+                }}>Average tenure</span>
+                <span style={{ 
+                  color: '#FFF', 
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '14px',
+                  fontStyle: 'normal',
+                  fontWeight: 600,
+                  lineHeight: '20px'
+                }}>
                   {selectedCandidate.workExperience?.[0]?.duration || '3 yrs 1 mos'}
                 </span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ color: '#70707B', fontSize: '12px' }}>Current tenure</span>
-                <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>
+              <div style={{ 
+                display: 'flex', 
+                padding: '12px',
+                flexDirection: 'column', 
+                alignItems: 'flex-start',
+                gap: '6px',
+                flex: '1 0 0',
+                borderRadius: '12px',
+                border: '0.5px solid #26272B',
+                background: '#1A1A1E'
+              }}>
+                <span style={{ 
+                  color: '#70707B', 
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '12px',
+                  fontStyle: 'normal',
+                  fontWeight: 500,
+                  lineHeight: '18px'
+                }}>Current tenure</span>
+                <span style={{ 
+                  color: '#FFF', 
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '14px',
+                  fontStyle: 'normal',
+                  fontWeight: 600,
+                  lineHeight: '20px'
+                }}>
                   {selectedCandidate.currentTenure || '7 yrs 2 mos'}
                 </span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ color: '#70707B', fontSize: '12px' }}>Total experience</span>
-                <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>
+              <div style={{ 
+                display: 'flex', 
+                padding: '12px',
+                flexDirection: 'column', 
+                alignItems: 'flex-start',
+                gap: '6px',
+                flex: '1 0 0',
+                borderRadius: '12px',
+                border: '0.5px solid #26272B',
+                background: '#1A1A1E'
+              }}>
+                <span style={{ 
+                  color: '#70707B', 
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '12px',
+                  fontStyle: 'normal',
+                  fontWeight: 500,
+                  lineHeight: '18px'
+                }}>Total experience</span>
+                <span style={{ 
+                  color: '#FFF', 
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '14px',
+                  fontStyle: 'normal',
+                  fontWeight: 600,
+                  lineHeight: '20px'
+                }}>
                   {selectedCandidate.totalExperience || '24 yrs 8 mos'}
                 </span>
               </div>
