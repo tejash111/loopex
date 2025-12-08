@@ -2,7 +2,7 @@
 
 import { ChevronDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 const newProjectIcon = <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
   <path fill-rule="evenodd" clip-rule="evenodd" d="M13.3125 8.8125C13.7267 8.8125 14.0625 9.14835 14.0625 9.5625V11.8125H16.3125C16.7267 11.8125 17.0625 12.1484 17.0625 12.5625C17.0625 12.9767 16.7267 13.3125 16.3125 13.3125H14.0625V15.5625C14.0625 15.9767 13.7267 16.3125 13.3125 16.3125C12.8983 16.3125 12.5625 15.9767 12.5625 15.5625V13.3125H10.3125C9.89828 13.3125 9.5625 12.9767 9.5625 12.5625C9.5625 12.1484 9.89828 11.8125 10.3125 11.8125H12.5625V9.5625C12.5625 9.14835 12.8983 8.8125 13.3125 8.8125Z" fill="#A0A0AB"/>
@@ -19,7 +19,10 @@ const projectIcon = <svg xmlns="http://www.w3.org/2000/svg" width="17" height="1
 </svg>
 
 const generalLinks = [
-  { label: 'Shortlist', href: '/shortlist', icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+  { label: 'Shortlist', href: '/shortlist', iconActive: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+  <path d="M5.43383 9.71212C2.85767 10.3085 0.9375 12.6175 0.9375 15.375C0.9375 15.6856 1.18934 15.9375 1.5 15.9375H12C12.3106 15.9375 12.5625 15.6856 12.5625 15.375C12.5625 12.6175 10.6424 10.3085 8.06617 9.71212C9.59355 9.17055 10.6875 7.71308 10.6875 6C10.6875 3.82538 8.92462 2.0625 6.75 2.0625C4.57538 2.0625 2.8125 3.82538 2.8125 6C2.8125 7.71308 3.90643 9.17055 5.43383 9.71212Z" fill="#A48AFB"/>
+  <path d="M16.9778 6.4037C17.1691 6.77108 17.0264 7.224 16.659 7.41534C15.93 7.79505 15.2288 8.6022 14.6811 9.40088C14.4162 9.7872 14.2035 10.1472 14.0572 10.4104C13.9842 10.5416 13.8758 10.7525 13.8387 10.8247C13.7205 11.0708 13.4777 11.2335 13.2051 11.249C12.9323 11.2644 12.6727 11.1304 12.5274 10.8991C12.3728 10.6528 12.1179 10.4163 11.8677 10.2279C11.7479 10.1378 11.5314 10.0017 11.4546 9.95385C11.0908 9.75608 10.9559 9.30075 11.1535 8.93685C11.3512 8.5728 11.8065 8.43803 12.1706 8.63573C12.3377 8.72648 12.6085 8.90805 12.77 9.02963C12.8455 9.08655 12.9274 9.15113 13.0123 9.22298C13.1367 9.0174 13.2813 8.78985 13.444 8.55255C14.0214 7.7106 14.8952 6.64277 15.9661 6.08497C16.3335 5.89363 16.7864 6.03633 16.9778 6.4037Z" fill="#A48AFB"/>
+</svg>, icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
   <path d="M5.43383 9.71212C2.85767 10.3085 0.9375 12.6175 0.9375 15.375C0.9375 15.6856 1.18934 15.9375 1.5 15.9375H12C12.3106 15.9375 12.5625 15.6856 12.5625 15.375C12.5625 12.6175 10.6424 10.3085 8.06617 9.71212C9.59355 9.17055 10.6875 7.71308 10.6875 6C10.6875 3.82538 8.92462 2.0625 6.75 2.0625C4.57538 2.0625 2.8125 3.82538 2.8125 6C2.8125 7.71308 3.90643 9.17055 5.43383 9.71212Z" fill="#A0A0AB"/>
   <path d="M16.9778 6.4037C17.1691 6.77108 17.0264 7.224 16.659 7.41534C15.93 7.79505 15.2288 8.6022 14.6811 9.40088C14.4162 9.7872 14.2035 10.1472 14.0572 10.4104C13.9842 10.5416 13.8758 10.7525 13.8387 10.8247C13.7205 11.0708 13.4777 11.2335 13.2051 11.249C12.9323 11.2644 12.6727 11.1304 12.5274 10.8991C12.3728 10.6528 12.1179 10.4163 11.8677 10.2279C11.7479 10.1378 11.5314 10.0017 11.4546 9.95385C11.0908 9.75608 10.9559 9.30075 11.1535 8.93685C11.3512 8.5728 11.8065 8.43803 12.1706 8.63573C12.3377 8.72648 12.6085 8.90805 12.77 9.02963C12.8455 9.08655 12.9274 9.15113 13.0123 9.22298C13.1367 9.0174 13.2813 8.78985 13.444 8.55255C14.0214 7.7106 14.8952 6.64277 15.9661 6.08497C16.3335 5.89363 16.7864 6.03633 16.9778 6.4037Z" fill="#A0A0AB"/>
 </svg> },
@@ -81,6 +84,7 @@ export default function Sidebar({
   onCollapsedChange
 }: SidebarProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [projectSearchInput, setProjectSearchInput] = useState('')
   const [localCollapsed, setLocalCollapsed] = useState(false)
 
@@ -342,7 +346,9 @@ export default function Sidebar({
               General
             </p>
             <div className="space-y-1">
-              {generalLinks.map((link) => (
+              {generalLinks.map((link) => {
+                const isActive = link.href && link.href !== '#' && pathname === link.href
+                return (
                 <button 
                   key={link.label} 
                   onClick={() => link.href && link.href !== '#' && router.push(link.href)}
@@ -364,12 +370,12 @@ export default function Sidebar({
                       flex: '1 0 0'
                     }}
                   >
-                    <span className="text-lg">{link.icon}</span>
+                    <span className="text-lg">{isActive && link.iconActive ? link.iconActive : link.icon}</span>
                     <span 
                       className="font-body"
                       style={{ 
                         overflow: 'hidden',
-                        color: '#A0A0AB',
+                        color: isActive ? '#A48AFB' : '#A0A0AB',
                         fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
                         textOverflow: 'ellipsis',
                         fontSize: '14px',
@@ -385,7 +391,7 @@ export default function Sidebar({
                     <span className="text-[11px] px-2 py-0.5 rounded-sm border border-[#315f45]" style={{ backgroundColor: '#172820', color: '#caf7da' }}>{link.badge}</span>
                   )}
                 </button>
-              ))}
+              )})}
             </div>
           </div>
           )}
@@ -393,7 +399,9 @@ export default function Sidebar({
           {/* General section icons when collapsed */}
           {collapsed && (
             <div className="space-y-1 mt-4">
-              {generalLinks.map((link) => (
+              {generalLinks.map((link) => {
+                const isActive = link.href && link.href !== '#' && pathname === link.href
+                return (
                 <button 
                   key={link.label} 
                   onClick={() => link.href && link.href !== '#' && router.push(link.href)}
@@ -406,9 +414,9 @@ export default function Sidebar({
                   }}
                   title={link.label}
                 >
-                  <span className="text-lg">{link.icon}</span>
+                  <span className="text-lg">{isActive && link.iconActive ? link.iconActive : link.icon}</span>
                 </button>
-              ))}
+              )})}
             </div>
           )}
         </div>

@@ -68,6 +68,52 @@ export default function ShortlistPage() {
   const [projectsData, setProjectsData] = useState<{_id: string, name: string}[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [showProjectDropdown, setShowProjectDropdown] = useState(false)
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+
+  // Custom Checkbox Component
+  const CustomCheckbox = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
+    <div
+      onClick={onChange}
+      style={{
+        width: '20px',
+        height: '20px',
+        borderRadius: '6px',
+        border: checked ? 'none' : '1px solid #26272B',
+        background: checked ? '#875BF7' : '#131316',
+        display: 'flex',
+        padding: checked ? '3px' : '0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        cursor: 'pointer'
+      }}
+    >
+      {checked && (
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M11.6663 3.5L5.24967 9.91667L2.33301 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+    </div>
+  )
+
+  // Toggle select all
+  const toggleSelectAll = () => {
+    if (selectedItems.size === shortlistedProfiles.length) {
+      setSelectedItems(new Set())
+    } else {
+      setSelectedItems(new Set(shortlistedProfiles.map(item => item._id)))
+    }
+  }
+
+  // Toggle single item
+  const toggleSelectItem = (id: string) => {
+    const newSelected = new Set(selectedItems)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedItems(newSelected)
+  }
 
   // Fetch user projects
   useEffect(() => {
@@ -198,73 +244,141 @@ export default function ShortlistPage() {
       <div 
         className="min-h-screen transition-all duration-300" 
         style={{ 
+          display: 'flex',
+          padding: '16px',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          flex: '1 0 0',
+          alignSelf: 'stretch',
+          borderRadius: '24px 0 0 24px',
           marginLeft: sidebarCollapsed ? '72px' : '256px',
           backgroundColor: '#131316'
         }}
       >
-        <main className="p-4">
+        <main 
+          className="w-full p-[6px]"
+          style={{
+           
+            flex: '1 0 0',
+            alignSelf: 'stretch',
+            borderRadius: '20px',
+            border: '0.5px solid #26272B',
+            background: '#161619'
+          }}
+        >
           {/* Header with Project Selector */}
           <div 
-            className="flex items-center gap-3 p-4 rounded-xl mb-4"
             style={{ 
-              background: '#1A1A1E',
-              border: '0.5px solid #26272B'
+              display: 'flex',
+              width: '100%',
+              padding: '12px 16px',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: '8px',
+              borderRadius: '16px',
+              border: '0.5px solid #3F3F46',
+              background: '#131316',
+              marginBottom: '8px'
             }}
           >
             <button
               onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg"
               style={{
-                background: '#26272B',
-                border: '0.5px solid #3F3F46'
+                display: 'flex',
+                padding: '4px 8px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '6px',
+                borderRadius: '8px',
+                border: '0.5px solid #26272B',
+                background: '#1A1A1E',
+                boxShadow: '0 0 0 1px rgba(10, 13, 18, 0.18) inset, 0 -2px 0 0 rgba(10, 13, 18, 0.05) inset, 0 1px 2px 0 rgba(10, 13, 18, 0.05)',
+                cursor: 'pointer'
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14" viewBox="0 0 17 15" fill="none">
-                <path d="M4.37448 2.87006e-05C5.14654 -0.000308799 5.6803 -0.000548769 6.15945 0.179129C7.20607 0.571596 7.6653 1.50097 8.01937 2.21733C8.12535 2.42938 8.31818 2.81458 8.3721 2.89928C8.3886 2.92697 8.4408 2.98369 8.5173 2.98904C8.6172 2.99937 8.7525 3.00006 8.98958 3.00006H11.6554C12.4196 3.00005 13.0359 3.00004 13.5304 3.05035C14.0408 3.10227 14.4835 3.21241 14.8751 3.47405C15.1822 3.67925 15.4458 3.94292 15.651 4.25002C15.9127 4.6416 16.0228 5.08426 16.0748 5.59468C16.125 6.08916 16.125 6.76753 16.125 7.53178C16.125 8.82156 16.125 9.83271 16.0431 10.6378C15.9596 11.4588 15.7862 12.1277 15.3983 12.7084C15.0836 13.1794 14.6793 13.5836 14.2084 13.8983C13.6277 14.2863 12.9587 14.4597 12.1377 14.5432C11.3326 14.6251 10.3215 14.6251 9.03172 14.6251H8.01945C6.28817 14.6251 4.93139 14.6251 3.87278 14.4828C2.78923 14.3371 1.93421 14.0331 1.26311 13.362C0.591998 12.6909 0.287993 11.8358 0.142313 10.7523C-1.48192e-05 9.69366 -7.28884e-06 8.33691 2.11162e-07 6.60561V4.24469C-7.28884e-06 3.58564 -1.4822e-05 3.0541 0.0378302 2.62483C0.0768152 2.18253 0.159285 1.79547 0.35655 1.44199C0.61071 0.986564 0.986498 0.610769 1.44194 0.356609C1.79541 0.159344 2.18247 0.0768813 2.62478 0.0378888C3.05404 5.12945e-05 3.71543 2.12006e-05 4.37448 2.87006e-05Z" fill="#A48AFB"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M4.13187 1.31252C4.73236 1.31226 5.1475 1.31207 5.52018 1.45182C6.33422 1.75707 6.69139 2.47992 6.96678 3.03709C7.04921 3.20201 7.19918 3.50162 7.24113 3.5675C7.25396 3.58903 7.29456 3.63314 7.35406 3.63731C7.43176 3.64534 7.53699 3.64588 7.72138 3.64588H9.79478C10.3892 3.64587 10.8685 3.64587 11.2531 3.68499C11.6501 3.72538 11.9944 3.81104 12.299 4.01454C12.5379 4.17414 12.7429 4.37922 12.9025 4.61807C13.106 4.92263 13.1917 5.26692 13.2321 5.66391C13.2712 6.04851 13.2712 6.57614 13.2712 7.17055C13.2712 8.17371 13.2712 8.96016 13.2075 9.58631C13.1425 10.2249 13.0077 10.7452 12.7059 11.1968C12.4611 11.5631 12.1467 11.8775 11.7805 12.1223C11.3288 12.4241 10.8085 12.5589 10.1699 12.6238C9.54378 12.6875 8.75733 12.6875 7.75417 12.6875H6.96684C5.62029 12.6875 4.56502 12.6875 3.74166 12.5769C2.89889 12.4635 2.23388 12.2271 1.71191 11.7052C1.18993 11.1832 0.953487 10.5181 0.84018 9.67539C0.729481 8.85201 0.729487 7.79676 0.729492 6.4502V4.61393C0.729487 4.10133 0.729481 3.68791 0.758916 3.35404C0.789237 3.01002 0.853381 2.70898 1.00681 2.43405C1.20449 2.07983 1.49677 1.78754 1.851 1.58986C2.12592 1.43643 2.42697 1.3723 2.77098 1.34197C3.10486 1.31254 3.61927 1.31252 4.13187 1.31252Z" fill="#70707B"/>
               </svg>
-              <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>
+              <span style={{ 
+                color: '#FFF', 
+                fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                fontSize: '12px',
+                fontStyle: 'normal',
+                fontWeight: 600,
+                lineHeight: '18px'
+              }}>
                 {selectedProject || 'Select Project'}
               </span>
-              <ChevronDown size={16} color="#A48AFB" />
+             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+  <path d="M10.5 5.25003C10.5 5.25003 7.92231 8.75 7 8.75C6.07763 8.75 3.5 5.25 3.5 5.25" stroke="#70707B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
             </button>
             
-            <span style={{ 
-              color: '#FFF', 
-              fontSize: '14px',
-              fontWeight: 400,
-              flex: 1
+            <span 
+            className='ml-[12px]'
+            style={{ 
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 1,
+              flex: '1 0 0',
+              overflow: 'hidden',
+              color: '#FFF',
+              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+              textOverflow: 'ellipsis',
+              fontSize: '16px',
+              fontStyle: 'normal',
+              fontWeight: 500,
+              lineHeight: '24px'
             }}>
               {shortlistedProfiles.length > 0 
                 ? `${shortlistedProfiles.length} shortlisted profiles`
-                : 'No shortlisted profiles yet'
+                : '2 shortlisted profiles'
               }
             </span>
 
-            <ChevronDown size={20} color="#70707B" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <path d="M18 9.00005C18 9.00005 13.5811 15 12 15C10.4188 15 6 9 6 9" stroke="#A0A0AB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
           </div>
 
           {/* Tabs and Search */}
           <div 
-            className="rounded-xl overflow-hidden"
             style={{ 
-              background: '#1A1A1E',
-              border: '0.5px solid #26272B'
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              alignSelf: 'stretch',
+              width: '100%',
+              borderRadius: '12px',
+              border: '0.5px solid #26272B',
+              background: '#131316',
+              boxShadow: '0 1px 2px 0 rgba(10, 13, 18, 0.05)',
+              overflow: 'hidden'
             }}
           >
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#26272B' }}>
-              <div className="flex items-center gap-6">
+            <div className="flex items-center justify-between p-4 border-b w-full" style={{ borderColor: '#26272B' }}>
+              <div className="flex items-center gap-2">
                 {tabs.map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className="pb-2"
                     style={{
+                      display: 'flex',
+                      padding: '10px 12px',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '8px',
+                      borderRadius: activeTab === tab ? '10px' : '0',
+                      border: activeTab === tab ? '0.5px solid #26272B' : 'none',
+                      background: activeTab === tab ? '#1A1A1E' : 'transparent',
                       color: activeTab === tab ? '#FFF' : '#70707B',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
                       fontSize: '14px',
+                      fontStyle: 'normal',
                       fontWeight: 500,
-                      borderBottom: activeTab === tab ? '2px solid #875BF7' : '2px solid transparent',
-                      marginBottom: '-17px',
-                      paddingBottom: '17px'
+                      lineHeight: '20px',
+                      cursor: 'pointer'
                     }}
                   >
                     {tab}
@@ -274,10 +388,16 @@ export default function ShortlistPage() {
 
               <div className="flex items-center gap-3">
                 <div 
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg"
                   style={{
-                    background: '#131316',
-                    border: '0.5px solid #26272B'
+                    display: 'flex',
+                    padding: '8px 12px',
+                    alignItems: 'center',
+                    gap: '8px',
+                    alignSelf: 'stretch',
+                    borderRadius: '12px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E',
+                    boxShadow: '0 1px 2px 0 rgba(10, 13, 18, 0.05)'
                   }}
                 >
                   <input
@@ -285,62 +405,222 @@ export default function ShortlistPage() {
                     placeholder="Search name, company, etc."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-transparent border-none outline-none text-white text-sm"
-                    style={{ width: '200px' }}
+                    style={{ 
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 1,
+                      flex: '1 0 0',
+                      overflow: 'hidden',
+                      color: '#70707B',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      textOverflow: 'ellipsis',
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '16px',
+                      fontStyle: 'normal',
+                      fontWeight: 400,
+                      lineHeight: '24px',
+                      width: '200px',
+                      background: 'transparent',
+                      border: 'none',
+                      outline: 'none'
+                    }}
                   />
-                  <ChevronDown size={16} color="#70707B" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M12 6.00003C12 6.00003 9.05407 10 8 10C6.94587 10 4 6 4 6" stroke="#70707B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
 
                 <button
-                  className="p-2 rounded-lg"
                   style={{
-                    background: '#26272B',
-                    border: '0.5px solid #3F3F46'
+                    display: 'flex',
+                    padding: '10px 14px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '4px',
+                    borderRadius: '12px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E',
+                    cursor: 'pointer'
                   }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M2.25 4.5H15.75M4.5 9H13.5M6.75 13.5H11.25" stroke="#70707B" strokeWidth="1.5" strokeLinecap="round"/>
+                  <span style={{
+                    color: '#A48AFB',
+                    fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                    fontFamily: '"Inter Display", sans-serif',
+                    fontSize: '14px',
+                    fontStyle: 'normal',
+                    fontWeight: 600,
+                    lineHeight: '20px'
+                  }}>Sort</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M12 6.00003C12 6.00003 9.05407 10 8 10C6.94587 10 4 6 4 6" stroke="#A48AFB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
 
                 <button
-                  className="p-2 rounded-lg"
                   style={{
-                    background: '#26272B',
-                    border: '0.5px solid #3F3F46'
+                    display: 'flex',
+                    padding: '10px 14px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '4px',
+                    borderRadius: '12px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E',
+                    cursor: 'pointer'
                   }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M6.75 2.25V15.75M11.25 2.25V15.75M2.25 6.75H15.75M2.25 11.25H15.75" stroke="#70707B" strokeWidth="1.5" strokeLinecap="round"/>
+                  <span style={{
+                    color: '#A48AFB',
+                    fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                    fontFamily: '"Inter Display", sans-serif',
+                    fontSize: '14px',
+                    fontStyle: 'normal',
+                    fontWeight: 600,
+                    lineHeight: '20px'
+                  }}>Filter</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M1.33301 4.66667C1.33301 4.29848 1.63149 4 1.99967 4H3.99967C4.36786 4 4.66634 4.29848 4.66634 4.66667C4.66634 5.03485 4.36786 5.33333 3.99967 5.33333H1.99967C1.63149 5.33333 1.33301 5.03485 1.33301 4.66667Z" fill="#A48AFB"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M1.33301 11.3346C1.33301 10.9664 1.63149 10.668 1.99967 10.668H5.99967C6.36786 10.668 6.66634 10.9664 6.66634 11.3346C6.66634 11.7028 6.36786 12.0013 5.99967 12.0013H1.99967C1.63149 12.0013 1.33301 11.7028 1.33301 11.3346Z" fill="#A48AFB"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M11.333 11.3346C11.333 10.9664 11.6315 10.668 11.9997 10.668H13.9997C14.3679 10.668 14.6663 10.9664 14.6663 11.3346C14.6663 11.7028 14.3679 12.0013 13.9997 12.0013H11.9997C11.6315 12.0013 11.333 11.7028 11.333 11.3346Z" fill="#A48AFB"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M9.33301 4.66667C9.33301 4.29848 9.63147 4 9.99967 4H13.9997C14.3679 4 14.6663 4.29848 14.6663 4.66667C14.6663 5.03486 14.3679 5.33333 13.9997 5.33333H9.99967C9.63147 5.33333 9.33301 5.03485 9.33301 4.66667Z" fill="#A48AFB"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M5.98317 2.16797H6.01683C6.31314 2.16796 6.5605 2.16796 6.7636 2.18182C6.975 2.19624 7.17467 2.22734 7.36827 2.30752C7.81747 2.4936 8.1744 2.8505 8.36047 3.29972C8.44067 3.49331 8.47173 3.693 8.48613 3.9044C8.5 4.10747 8.5 4.35482 8.5 4.65113V4.68481C8.5 4.98112 8.5 5.22847 8.48613 5.43155C8.47173 5.64295 8.44067 5.84263 8.36047 6.03622C8.1744 6.48544 7.81747 6.84237 7.36827 7.02844C7.17467 7.10864 6.975 7.1397 6.7636 7.1541C6.5605 7.16797 6.31315 7.16797 6.01684 7.16797H5.98316C5.68685 7.16797 5.4395 7.16797 5.23643 7.1541C5.02503 7.1397 4.82534 7.10864 4.63175 7.02844C4.18253 6.84237 3.82563 6.48544 3.63955 6.03622C3.55937 5.84263 3.52827 5.64295 3.51385 5.43155C3.49999 5.22847 3.49999 4.98111 3.5 4.6848V4.65114C3.49999 4.35483 3.49999 4.10747 3.51385 3.9044C3.52827 3.693 3.55937 3.49331 3.63955 3.29972C3.82563 2.8505 4.18253 2.4936 4.63175 2.30752C4.82534 2.22734 5.02503 2.19624 5.23643 2.18182C5.4395 2.16796 5.68686 2.16796 5.98317 2.16797Z" fill="#A48AFB"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M9.98313 8.83203H10.0169C10.3131 8.83203 10.5605 8.83203 10.7636 8.8459C10.975 8.8603 11.1747 8.89136 11.3683 8.97156C11.8175 9.15763 12.1744 9.51456 12.3605 9.96376C12.4407 10.1574 12.4717 10.357 12.4861 10.5684C12.5 10.7715 12.5 11.0189 12.5 11.3152V11.3489C12.5 11.6452 12.5 11.8926 12.4861 12.0956C12.4717 12.307 12.4407 12.5067 12.3605 12.7003C12.1744 13.1495 11.8175 13.5064 11.3683 13.6925C11.1747 13.7727 10.975 13.8038 10.7636 13.8182C10.5605 13.832 10.3131 13.832 10.0169 13.832H9.98313C9.68687 13.832 9.43947 13.832 9.2364 13.8182C9.025 13.8038 8.82533 13.7727 8.63173 13.6925C8.18253 13.5064 7.8256 13.1495 7.63953 12.7003C7.55933 12.5067 7.52827 12.307 7.51387 12.0956C7.5 11.8926 7.5 11.6452 7.5 11.3489V11.3152C7.5 11.0189 7.5 10.7715 7.51387 10.5684C7.52827 10.357 7.55933 10.1574 7.63953 9.96376C7.8256 9.51456 8.18253 9.15763 8.63173 8.97156C8.82533 8.89136 9.025 8.8603 9.2364 8.8459C9.43947 8.83203 9.68687 8.83203 9.98313 8.83203Z" fill="#A48AFB"/>
                   </svg>
                 </button>
               </div>
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '0.5px solid #26272B' }}>
-                    <th className="p-4 text-left" style={{ width: '40px' }}>
-                      <input type="checkbox" className="rounded" />
+                  <tr style={{ 
+                    display: 'flex',
+                    height: '44px',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderBottom: '0.5px solid #26272B',
+                    background: '#1A1A1E'
+                  }}>
+                    <th style={{ 
+                      width: '60px', 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      borderRight: '0.5px solid #26272B'
+                    }}>
+                      <CustomCheckbox 
+                        checked={selectedItems.size === shortlistedProfiles.length && shortlistedProfiles.length > 0} 
+                        onChange={toggleSelectAll} 
+                      />
                     </th>
-                    <th className="p-4 text-left" style={{ color: '#70707B', fontSize: '12px', fontWeight: 500 }}>
+                    <th style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px 24px',
+                      height: '100%',
+                      borderRight: '0.5px solid #26272B',
+                      color: '#70707B', 
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '12px', 
+                      fontStyle: 'normal',
+                      fontWeight: 600,
+                      lineHeight: '18px',
+                      textAlign: 'left'
+                    }}>
                       Name
                     </th>
-                    <th className="p-4 text-left" style={{ color: '#70707B', fontSize: '12px', fontWeight: 500 }}>
+                    <th style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px 24px',
+                      height: '100%',
+                      borderRight: '0.5px solid #26272B',
+                      color: '#70707B', 
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '12px', 
+                      fontStyle: 'normal',
+                      fontWeight: 600,
+                      lineHeight: '18px',
+                      textAlign: 'left'
+                    }}>
                       Socials
                     </th>
-                    <th className="p-4 text-left" style={{ color: '#70707B', fontSize: '12px', fontWeight: 500 }}>
+                    <th style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px 24px',
+                      height: '100%',
+                      borderRight: '0.5px solid #26272B',
+                      color: '#70707B', 
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '12px', 
+                      fontStyle: 'normal',
+                      fontWeight: 600,
+                      lineHeight: '18px',
+                      textAlign: 'left'
+                    }}>
                       Status
                     </th>
-                    <th className="p-4 text-left" style={{ color: '#70707B', fontSize: '12px', fontWeight: 500 }}>
+                    <th style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px 24px',
+                      height: '100%',
+                      borderRight: '0.5px solid #26272B',
+                      color: '#70707B', 
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '12px', 
+                      fontStyle: 'normal',
+                      fontWeight: 600,
+                      lineHeight: '18px',
+                      textAlign: 'left'
+                    }}>
                       Date
                     </th>
-                    <th className="p-4 text-left" style={{ color: '#70707B', fontSize: '12px', fontWeight: 500 }}>
+                    <th style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px 24px',
+                      height: '100%',
+                      borderRight: '0.5px solid #26272B',
+                      color: '#70707B', 
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '12px', 
+                      fontStyle: 'normal',
+                      fontWeight: 600,
+                      lineHeight: '18px',
+                      textAlign: 'left'
+                    }}>
                       Company
                     </th>
-                    <th className="p-4 text-left" style={{ color: '#70707B', fontSize: '12px', fontWeight: 500 }}>
+                    <th style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px 24px',
+                      height: '100%',
+                      color: '#70707B', 
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '12px', 
+                      fontStyle: 'normal',
+                      fontWeight: 600,
+                      lineHeight: '18px',
+                      textAlign: 'left'
+                    }}>
                       Location
                     </th>
                   </tr>
@@ -365,21 +645,66 @@ export default function ShortlistPage() {
                         item.profileId?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         item.profileId?.workExperience?.[0]?.company?.toLowerCase().includes(searchQuery.toLowerCase())
                       )
-                      .map((item) => (
+                      .map((item, index, filteredArray) => (
                         <tr 
                           key={item._id} 
-                          style={{ borderBottom: '0.5px solid #26272B' }}
+                          style={{ 
+                            display: 'flex',
+                            height: '72px',
+                            alignItems: 'center',
+                            alignSelf: 'stretch',
+                            borderBottom: index === filteredArray.length - 1 ? 'none' : '0.5px solid #26272B',
+                            background: '#131316'
+                          }}
                           className="hover:bg-[#26272B] transition-colors cursor-pointer"
                         >
-                          <td className="p-4">
-                            <input type="checkbox" className="rounded" />
+                          <td style={{ 
+                            width: '60px', 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            borderRight: '0.5px solid #26272B'
+                          }}>
+                            <CustomCheckbox 
+                              checked={selectedItems.has(item._id)} 
+                              onChange={() => toggleSelectItem(item._id)} 
+                            />
                           </td>
-                          <td className="p-4">
-                            <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>
+                          <td style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            padding: '16px 24px',
+                            height: '100%',
+                            borderRight: '0.5px solid #26272B'
+                          }}>
+                            <span style={{ 
+                              display: '-webkit-box',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 1,
+                              flex: '1 0 0',
+                              overflow: 'hidden',
+                              color: '#FFF',
+                              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                              textOverflow: 'ellipsis',
+                              fontFamily: '"Inter Display", sans-serif',
+                              fontSize: '14px', 
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}>
                               {item.profileId?.name || 'Unknown'}
                             </span>
                           </td>
-                          <td className="p-4">
+                          <td style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            padding: '16px 24px',
+                            height: '100%',
+                            borderRight: '0.5px solid #26272B'
+                          }}>
                             <div className="flex items-center gap-2">
                               {item.profileId?.socials?.whatsapp && (
                                 <div dangerouslySetInnerHTML={{ __html: socialIcons.whatsapp }} />
@@ -394,7 +719,14 @@ export default function ShortlistPage() {
                               )}
                             </div>
                           </td>
-                          <td className="p-4">
+                          <td style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            padding: '16px 24px',
+                            height: '100%',
+                            borderRight: '0.5px solid #26272B'
+                          }}>
                             <button
                               className="flex items-center gap-2 px-3 py-1.5 rounded-md"
                               style={{
@@ -406,18 +738,80 @@ export default function ShortlistPage() {
                               <ChevronDown size={12} color="#70707B" />
                             </button>
                           </td>
-                          <td className="p-4">
-                            <span style={{ color: '#A0A0AB', fontSize: '14px' }}>
+                          <td style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            padding: '16px 24px',
+                            height: '100%',
+                            borderRight: '0.5px solid #26272B'
+                          }}>
+                            <span style={{ 
+                              display: '-webkit-box',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 1,
+                              flex: '1 0 0',
+                              overflow: 'hidden',
+                              color: '#A0A0AB',
+                              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                              textOverflow: 'ellipsis',
+                              fontFamily: '"Inter Display", sans-serif',
+                              fontSize: '14px', 
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}>
                               {formatDate(item.createdAt)}
                             </span>
                           </td>
-                          <td className="p-4">
-                            <span style={{ color: '#FFF', fontSize: '14px' }}>
+                          <td style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            padding: '16px 24px',
+                            height: '100%',
+                            borderRight: '0.5px solid #26272B'
+                          }}>
+                            <span style={{ 
+                              display: '-webkit-box',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 1,
+                              flex: '1 0 0',
+                              overflow: 'hidden',
+                              color: '#FFF',
+                              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                              textOverflow: 'ellipsis',
+                              fontFamily: '"Inter Display", sans-serif',
+                              fontSize: '14px', 
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}>
                               {item.profileId?.workExperience?.[0]?.company || 'N/A'}
                             </span>
                           </td>
-                          <td className="p-4">
-                            <span style={{ color: '#A0A0AB', fontSize: '14px' }}>
+                          <td style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            padding: '16px 24px',
+                            height: '100%'
+                          }}>
+                            <span style={{ 
+                              display: '-webkit-box',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 1,
+                              flex: '1 0 0',
+                              overflow: 'hidden',
+                              color: '#A0A0AB',
+                              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                              textOverflow: 'ellipsis',
+                              fontFamily: '"Inter Display", sans-serif',
+                              fontSize: '14px', 
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}>
                               {item.profileId?.location || 'N/A'}
                             </span>
                           </td>
