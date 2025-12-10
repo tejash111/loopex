@@ -21,4 +21,9 @@ router.put('/:id', projectController.updateProject);
 // Delete a project
 router.delete('/:id', projectController.deleteProject);
 
+// Saved searches routes
+router.post('/:id/saved-searches', projectController.addSavedSearch);
+router.get('/:id/saved-searches', projectController.getSavedSearches);
+router.delete('/:id/saved-searches/:searchId', projectController.deleteSavedSearch);
+
 module.exports = router;

@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+const savedSearchSchema = new mongoose.Schema({
+    query: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
 const projectSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -11,6 +23,7 @@ const projectSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    savedSearches: [savedSearchSchema],
     createdAt: {
         type: Date,
         default: Date.now

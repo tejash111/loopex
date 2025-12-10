@@ -53,6 +53,12 @@ const supportLinks = [
 </svg> }
 ]
 
+interface SavedSearch {
+  _id: string
+  query: string
+  createdAt: string
+}
+
 interface SidebarProps {
   showModal: boolean
   showFilterModal: boolean
@@ -64,6 +70,10 @@ interface SidebarProps {
   onShowProjectsDropdownChange: (show: boolean) => void
   isCollapsed?: boolean
   onCollapsedChange?: (collapsed: boolean) => void
+  savedSearches?: SavedSearch[]
+  onSavedSearchClick?: (query: string) => void
+  selectedProjectId?: string | null
+  currentSearchQuery?: string
 }
 
 const toggleIcon = <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -81,7 +91,11 @@ export default function Sidebar({
   showProjectsDropdown,
   onShowProjectsDropdownChange,
   isCollapsed = false,
-  onCollapsedChange
+  onCollapsedChange,
+  savedSearches = [],
+  onSavedSearchClick,
+  selectedProjectId,
+  currentSearchQuery = ''
 }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -305,7 +319,65 @@ export default function Sidebar({
                 </div>
               )}
             </div>
+            
+            {/* Saved Searches - Above New Search Button */}
+            {!collapsed && savedSearches.length > 0 && (
+              <div className="mt-3 space-y-1">
+                {[...savedSearches].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 2).map((search) => {
+                  const isSelected = currentSearchQuery.toLowerCase() === search.query.toLowerCase()
+                  return (
+                    <button
+                      key={search._id}
+                      onClick={() => onSavedSearchClick?.(search.query)}
+                      className="w-full text-left transition-all duration-200 flex items-center"
+                      style={{
+                        display: 'flex',
+                        padding: '8px 12px 8px 40px',
+                        alignItems: 'center',
+                        gap: '12px',
+                        flex: '1 0 0',
+                        borderRadius: '10px',
+                        backgroundColor: isSelected ? '#131316' : 'transparent',
+                        color: isSelected ? '#FFFFFF' : '#A0A0AB',
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        lineHeight: '20px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.backgroundColor = '#131316'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                        }
+                      }}
+                    >
+                      <span style={{ 
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        flex: 1
+                      }}>
+                        {search.query}
+                      </span>
+                    </button>
+                  )
+                })}
+                {savedSearches.length > 2 && (
+                  <div style={{ padding: '8px 12px 8px 40px' }}>
+                    <span style={{ color: '#A0A0AB', fontSize: '14px', fontWeight: 500 }}>
+                      +{savedSearches.length - 2}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <button 
+              onClick={() => router.push('/dashboard')}
               className={`mt-3 w-full rounded-lg py-2 text-[14px] font-bold text-white flex items-center justify-center ${collapsed ? '' : 'gap-2'}`} 
               style={{ backgroundColor: '#875BF7' }}
               title={collapsed ? 'New search' : undefined}
@@ -317,6 +389,7 @@ export default function Sidebar({
 </svg>
             
             </button>
+            
             {!collapsed && (
               <div className="flex justify-center" style={{ marginTop: '20px', marginBottom: '20px' }}>
                 <div style={{ 

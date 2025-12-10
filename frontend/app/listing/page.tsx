@@ -73,6 +73,58 @@ const Listing = () => {
   const [activeTab, setActiveTab] = useState('Overview')
   const [shortlistedProfiles, setShortlistedProfiles] = useState<Set<string>>(new Set())
   const [shortlistLoading, setShortlistLoading] = useState<string | null>(null)
+  const [savedSearches, setSavedSearches] = useState<{_id: string, query: string, createdAt: string}[]>([])
+  const lastSavedSearchRef = React.useRef<string | null>(null)
+
+  // Fetch saved searches for the selected project
+  const fetchSavedSearches = async (projectId: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${apiUrl}/api/projects/${projectId}/saved-searches`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSavedSearches(data.savedSearches || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching saved searches:', error)
+    }
+  }
+
+  // Save search to project
+  const saveSearchToProject = async (query: string) => {
+    if (!selectedProjectId || !query.trim()) return
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${apiUrl}/api/projects/${selectedProjectId}/saved-searches`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ query: query.trim() })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSavedSearches(data.savedSearches || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error saving search:', error)
+    }
+  }
+
+  // Handle saved search click
+  const handleSavedSearchClick = (query: string) => {
+    // Navigate to listing page with the saved search query
+    window.location.href = `/listing?query=${encodeURIComponent(query)}`
+  }
 
   // Fetch user projects and restore selected project on mount
   useEffect(() => {
@@ -145,6 +197,39 @@ const Listing = () => {
       }
     }
   }, [selectedProject, projectsData])
+
+  // Fetch saved searches when project changes
+  useEffect(() => {
+    if (selectedProjectId) {
+      fetchSavedSearches(selectedProjectId)
+      // Reset the last saved search ref when project changes
+      lastSavedSearchRef.current = null
+    }
+  }, [selectedProjectId])
+
+  // Save search query when project ID becomes available
+  useEffect(() => {
+    if (selectedProjectId && searchQuery && searchQuery.trim()) {
+      const normalizedQuery = searchQuery.trim().toLowerCase()
+      
+      // Check if we've already saved this search in this session
+      if (lastSavedSearchRef.current === normalizedQuery) {
+        return
+      }
+      
+      // Check if search already exists in savedSearches
+      const alreadyExists = savedSearches.some(
+        s => s.query.toLowerCase() === normalizedQuery
+      )
+      
+      if (!alreadyExists) {
+        lastSavedSearchRef.current = normalizedQuery
+        saveSearchToProject(searchQuery.trim())
+      } else {
+        lastSavedSearchRef.current = normalizedQuery
+      }
+    }
+  }, [selectedProjectId, searchQuery, savedSearches])
 
   // Persist selected project to localStorage
   useEffect(() => {
@@ -381,6 +466,10 @@ const Listing = () => {
         onShowProjectsDropdownChange={setShowProjectsDropdown}
         isCollapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
+        savedSearches={savedSearches}
+        onSavedSearchClick={handleSavedSearchClick}
+        selectedProjectId={selectedProjectId}
+        currentSearchQuery={searchQuery}
       />
       <div 
         className="min-h-screen rounded-[24px] flex px-[16px] py-[12px] bg-[#131316] transition-all duration-300" 
@@ -700,14 +789,34 @@ const Listing = () => {
                                 <span 
                                   key={index}
                                   style={{ 
-                                    color: '#FFF',
-                                    fontWeight: 600,
-                                    background: 'rgba(139, 92, 246, 0.1)',
-                                    padding: '2px 4px',
-                                    borderRadius: '4px',
+                                    display: 'inline-flex',
+                                    padding: '2px 8px 2px 6px',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                    borderRadius: '6px',
+                                    border: '0.5px solid #491C95',
+                                    background: 'rgba(46, 18, 94, 0.60)',
+                                    color: '#C3B4FD',
+                                    textAlign: 'center',
+                                    fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                                    fontSize: '12px',
+                                    fontWeight: 500,
+                                    lineHeight: '18px',
                                     marginRight: '4px'
                                   }}
                                 >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                    <g clipPath="url(#clip0_skill_{index})">
+                                      <path d="M6 1.125C6.2071 1.125 6.375 1.2929 6.375 1.5C6.375 2.50304 6.8803 3.53747 7.6714 4.32859C8.46255 5.1197 9.49695 5.625 10.5 5.625C10.7071 5.625 10.875 5.7929 10.875 6C10.875 6.2071 10.7071 6.375 10.5 6.375C9.49695 6.375 8.46255 6.8803 7.6714 7.6714C6.8803 8.46255 6.375 9.49695 6.375 10.5C6.375 10.7071 6.2071 10.875 6 10.875C5.7929 10.875 5.625 10.7071 5.625 10.5C5.625 9.49695 5.1197 8.46255 4.32859 7.6714C3.53747 6.8803 2.50304 6.375 1.5 6.375C1.2929 6.375 1.125 6.2071 1.125 6C1.125 5.7929 1.2929 5.625 1.5 5.625C2.50304 5.625 3.53747 5.1197 4.32859 4.32859C5.1197 3.53747 5.625 2.50304 5.625 1.5C5.625 1.2929 5.7929 1.125 6 1.125Z" fill="#A48AFB"/>
+                                      <path d="M9.625 0.625C9.73175 0.625 9.8242 0.69897 9.8477 0.8031L9.9648 1.323C10.0447 1.678 10.322 1.95523 10.677 2.0352L11.1969 2.15232C11.3011 2.17577 11.375 2.26826 11.375 2.375C11.375 2.48174 11.3011 2.57423 11.1969 2.59768L10.677 2.7148C10.322 2.79477 10.0447 3.07199 9.9648 3.42699L9.8477 3.9469C9.8242 4.05103 9.73175 4.125 9.625 4.125C9.51825 4.125 9.4258 4.05103 9.4023 3.9469L9.2852 3.42699C9.20525 3.07199 8.928 2.79477 8.573 2.7148L8.0531 2.59768C7.94895 2.57423 7.875 2.48174 7.875 2.375C7.875 2.26826 7.94895 2.17577 8.0531 2.15232L8.573 2.0352C8.928 1.95523 9.20525 1.67801 9.2852 1.323L9.4023 0.8031C9.4258 0.69897 9.51825 0.625 9.625 0.625Z" fill="#A48AFB"/>
+                                      <path d="M2.375 7.875C2.48174 7.875 2.57423 7.94895 2.59768 8.0531L2.7148 8.573C2.79477 8.928 3.07199 9.20525 3.42699 9.2852L3.9469 9.4023C4.05103 9.4258 4.125 9.51825 4.125 9.625C4.125 9.73175 4.05103 9.8242 3.9469 9.8477L3.42699 9.9648C3.07199 10.0447 2.79477 10.322 2.7148 10.677L2.59768 11.1969C2.57423 11.3011 2.48174 11.375 2.375 11.375C2.26826 11.375 2.17577 11.3011 2.15232 11.1969L2.0352 10.677C1.95523 10.322 1.67801 10.0447 1.323 9.9648L0.8031 9.8477C0.69897 9.8242 0.625 9.73175 0.625 9.625C0.625 9.51825 0.69897 9.4258 0.8031 9.4023L1.323 9.2852C1.67801 9.20525 1.95523 8.928 2.0352 8.573L2.15232 8.0531C2.17577 7.94895 2.26826 7.875 2.375 7.875Z" fill="#A48AFB"/>
+                                    </g>
+                                    <defs>
+                                      <clipPath id="clip0_skill_{index}">
+                                        <rect width="12" height="12" fill="white"/>
+                                      </clipPath>
+                                    </defs>
+                                  </svg>
                                   {skill}
                                 </span>
                               ))}
@@ -1326,15 +1435,35 @@ const Listing = () => {
                   <span
                     key={index}
                     style={{
-                      padding: '4px 12px',
+                      display: 'flex',
+                      padding: index < 2 ? '2px 8px 2px 6px' : '2px 6px',
+                      alignItems: 'center',
+                      gap: '2px',
                       borderRadius: '6px',
-                      background: index < 2 ? '#26272B' : '#2D1F54',
-                      border: index < 2 ? '0.5px solid #3F3F46' : '0.5px solid #5B21B6',
-                      color: index < 2 ? '#FFF' : '#C4B5FD',
+                      border: index < 2 ? '0.5px solid #491C95' : '0.5px solid #3F3F46',
+                      background: index < 2 ? 'rgba(46, 18, 94, 0.60)' : '#26272B',
+                      color: index < 2 ? '#C3B4FD' : '#FFF',
+                      textAlign: 'center',
+                      fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
                       fontSize: '12px',
-                      fontWeight: 500
+                      fontWeight: 500,
+                      lineHeight: '18px'
                     }}
                   >
+                    {index < 2 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <g clipPath="url(#clip0_detail_skill_{index})">
+                          <path d="M6 1.125C6.2071 1.125 6.375 1.2929 6.375 1.5C6.375 2.50304 6.8803 3.53747 7.6714 4.32859C8.46255 5.1197 9.49695 5.625 10.5 5.625C10.7071 5.625 10.875 5.7929 10.875 6C10.875 6.2071 10.7071 6.375 10.5 6.375C9.49695 6.375 8.46255 6.8803 7.6714 7.6714C6.8803 8.46255 6.375 9.49695 6.375 10.5C6.375 10.7071 6.2071 10.875 6 10.875C5.7929 10.875 5.625 10.7071 5.625 10.5C5.625 9.49695 5.1197 8.46255 4.32859 7.6714C3.53747 6.8803 2.50304 6.375 1.5 6.375C1.2929 6.375 1.125 6.2071 1.125 6C1.125 5.7929 1.2929 5.625 1.5 5.625C2.50304 5.625 3.53747 5.1197 4.32859 4.32859C5.1197 3.53747 5.625 2.50304 5.625 1.5C5.625 1.2929 5.7929 1.125 6 1.125Z" fill="#A48AFB"/>
+                          <path d="M9.625 0.625C9.73175 0.625 9.8242 0.69897 9.8477 0.8031L9.9648 1.323C10.0447 1.678 10.322 1.95523 10.677 2.0352L11.1969 2.15232C11.3011 2.17577 11.375 2.26826 11.375 2.375C11.375 2.48174 11.3011 2.57423 11.1969 2.59768L10.677 2.7148C10.322 2.79477 10.0447 3.07199 9.9648 3.42699L9.8477 3.9469C9.8242 4.05103 9.73175 4.125 9.625 4.125C9.51825 4.125 9.4258 4.05103 9.4023 3.9469L9.2852 3.42699C9.20525 3.07199 8.928 2.79477 8.573 2.7148L8.0531 2.59768C7.94895 2.57423 7.875 2.48174 7.875 2.375C7.875 2.26826 7.94895 2.17577 8.0531 2.15232L8.573 2.0352C8.928 1.95523 9.20525 1.67801 9.2852 1.323L9.4023 0.8031C9.4258 0.69897 9.51825 0.625 9.625 0.625Z" fill="#A48AFB"/>
+                          <path d="M2.375 7.875C2.48174 7.875 2.57423 7.94895 2.59768 8.0531L2.7148 8.573C2.79477 8.928 3.07199 9.20525 3.42699 9.2852L3.9469 9.4023C4.05103 9.4258 4.125 9.51825 4.125 9.625C4.125 9.73175 4.05103 9.8242 3.9469 9.8477L3.42699 9.9648C3.07199 10.0447 2.79477 10.322 2.7148 10.677L2.59768 11.1969C2.57423 11.3011 2.48174 11.375 2.375 11.375C2.26826 11.375 2.17577 11.3011 2.15232 11.1969L2.0352 10.677C1.95523 10.322 1.67801 10.0447 1.323 9.9648L0.8031 9.8477C0.69897 9.8242 0.625 9.73175 0.625 9.625C0.625 9.51825 0.69897 9.4258 0.8031 9.4023L1.323 9.2852C1.67801 9.20525 1.95523 8.928 2.0352 8.573L2.15232 8.0531C2.17577 7.94895 2.26826 7.875 2.375 7.875Z" fill="#A48AFB"/>
+                        </g>
+                        <defs>
+                          <clipPath id="clip0_detail_skill_{index}">
+                            <rect width="12" height="12" fill="white"/>
+                          </clipPath>
+                        </defs>
+                      </svg>
+                    )}
                     {skill}
                   </span>
                 ))}
@@ -1348,13 +1477,18 @@ const Listing = () => {
                   <span
                     key={index}
                     style={{
-                      padding: '4px 12px',
+                      display: 'flex',
+                      padding: '2px 6px',
+                      alignItems: 'center',
                       borderRadius: '6px',
-                      background: '#26272B',
                       border: '0.5px solid #3F3F46',
+                      background: '#26272B',
                       color: '#FFF',
+                      textAlign: 'center',
+                      fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
                       fontSize: '12px',
-                      fontWeight: 500
+                      fontWeight: 500,
+                      lineHeight: '18px'
                     }}
                   >
                     {skill}
@@ -1386,13 +1520,18 @@ const Listing = () => {
                 <span
                   key={index}
                   style={{
-                    padding: '4px 12px',
+                    display: 'flex',
+                    padding: '2px 6px',
+                    alignItems: 'center',
                     borderRadius: '6px',
-                    background: '#26272B',
                     border: '0.5px solid #3F3F46',
+                    background: '#26272B',
                     color: '#FFF',
+                    textAlign: 'center',
+                    fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
                     fontSize: '12px',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    lineHeight: '18px'
                   }}
                 >
                   {lang}
