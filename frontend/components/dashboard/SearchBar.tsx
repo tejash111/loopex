@@ -10,6 +10,7 @@ interface SearchBarProps {
   onFilterClick: () => void
   onUploadJDClick: () => void
   onSearch?: (query: string) => void
+  filterCount?: number
 }
 
 export default function SearchBar({
@@ -17,7 +18,8 @@ export default function SearchBar({
   setSearchInput,
   onFilterClick,
   onUploadJDClick,
-  onSearch
+  onSearch,
+  filterCount = 0
 }: SearchBarProps) {
   const handleSearch = () => {
     if (searchInput.trim() && onSearch) {
@@ -67,6 +69,7 @@ export default function SearchBar({
               fontStyle: 'normal',
               fontWeight: 600,
               lineHeight: '18px',
+              position: 'relative'
             }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -78,6 +81,28 @@ export default function SearchBar({
               <path fillRule="evenodd" clipRule="evenodd" d="M9.98313 8.83334H10.0169C10.3131 8.83334 10.5605 8.83334 10.7636 8.84721C10.975 8.86161 11.1747 8.89268 11.3683 8.97288C11.8175 9.15894 12.1744 9.51588 12.3605 9.96508C12.4407 10.1587 12.4717 10.3583 12.4861 10.5697C12.5 10.7728 12.5 11.0202 12.5 11.3165V11.3502C12.5 11.6465 12.5 11.8939 12.4861 12.0969C12.4717 12.3083 12.4407 12.508 12.3605 12.7016C12.1744 13.1508 11.8175 13.5077 11.3683 13.6938C11.1747 13.774 10.975 13.8051 10.7636 13.8195C10.5605 13.8333 10.3131 13.8333 10.0169 13.8333H9.98313C9.68687 13.8333 9.43947 13.8333 9.2364 13.8195C9.025 13.8051 8.82533 13.774 8.63173 13.6938C8.18253 13.5077 7.8256 13.1508 7.63953 12.7016C7.55933 12.508 7.52827 12.3083 7.51387 12.0969C7.5 11.8939 7.5 11.6465 7.5 11.3502V11.3165C7.5 11.0202 7.5 10.7728 7.51387 10.5697C7.52827 10.3583 7.55933 10.1587 7.63953 9.96508C7.8256 9.51588 8.18253 9.15894 8.63173 8.97288C8.82533 8.89268 9.025 8.86161 9.2364 8.84721C9.43947 8.83334 9.68687 8.83334 9.98313 8.83334Z" fill="white"/>
             </svg>
             Filters
+            {filterCount > 0 && (
+              <div style={{
+                display: 'flex',
+                width: '16px',
+                height: '16px',
+                padding: '0 6px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderRadius: '720px',
+                background: '#7839EE',
+                color: '#FFF',
+                textAlign: 'center',
+                fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                fontSize: '10px',
+                fontStyle: 'normal',
+                fontWeight: 500,
+                lineHeight: '16px'
+              }}>
+                {filterCount}
+              </div>
+            )}
           </button>
 
           <div className="flex items-center gap-[12px]">

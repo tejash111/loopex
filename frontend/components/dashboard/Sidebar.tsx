@@ -81,6 +81,56 @@ const toggleIcon = <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18
   <path d="M2.9999 9.7497C2.58568 9.7497 2.2499 9.41393 2.2499 8.9997C2.2499 8.58548 2.58568 8.2497 2.9999 8.2497H8.24998V7.43453C8.2499 7.15005 8.24975 6.85508 8.28575 6.62123C8.32423 6.37125 8.44145 5.9367 8.89798 5.7225C9.3497 5.51055 9.75373 5.691 9.9731 5.82248C10.1738 5.94278 10.3969 6.1293 10.6096 6.3072L10.6449 6.33668C11.0747 6.69585 11.5605 7.12605 11.9447 7.53533C12.1357 7.73873 12.3187 7.95488 12.4585 8.16803C12.5794 8.35238 12.75 8.65343 12.75 9C12.75 9.34658 12.5794 9.64755 12.4585 9.8319C12.3187 10.0451 12.1357 10.2612 11.9447 10.4647C11.5605 10.8739 11.0747 11.3041 10.6449 11.6633L10.6096 11.6928C10.3969 11.8707 10.1739 12.0572 9.9731 12.1775C9.75373 12.309 9.3497 12.4895 8.89798 12.2775C8.44153 12.0633 8.3243 11.6287 8.28583 11.3788C8.24983 11.145 8.2499 10.85 8.24998 10.5654V9.7497H2.9999Z" fill="#A48AFB"/>
 </svg>
 
+// Reusable Tooltip Component
+const Tooltip = ({ show, label }: { show: boolean; label: string }) => {
+  if (!show) return null;
+  
+  return (
+    <div style={{
+      position: 'absolute',
+      left: '100%',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      marginLeft: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0px',
+      pointerEvents: 'none',
+      zIndex: 50
+    }}>
+      <svg
+      className=''
+      xmlns="http://www.w3.org/2000/svg" width="9" height="16" viewBox="0 0 9 16" fill="none">
+        <path d="M8.51471 14.0711C8.51471 14.962 7.43757 15.4081 6.8076 14.7782L0.73653 8.70711C0.346005 8.31658 0.346006 7.68342 0.73653 7.29289L6.8076 1.22183C7.43757 0.591867 8.51471 1.03803 8.51471 1.92894L8.51471 14.0711Z" fill="white"/>
+      </svg>
+      <div style={{
+        marginRight : 'px',
+        display: 'flex',
+        padding: '8px 12px',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        alignSelf: 'stretch',
+        borderRadius: '12px',
+        background: '#FFF',
+        whiteSpace: 'nowrap'
+      }}>
+        <span style={{
+          color: '#131316',
+          textAlign: 'center',
+          fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+          fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+          fontSize: '12px',
+          fontStyle: 'normal',
+          fontWeight: 600,
+          lineHeight: '18px'
+        }}>
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export default function Sidebar({
   showModal,
   showFilterModal,
@@ -101,6 +151,7 @@ export default function Sidebar({
   const pathname = usePathname()
   const [projectSearchInput, setProjectSearchInput] = useState('')
   const [localCollapsed, setLocalCollapsed] = useState(false)
+  const [hoveredIcon, setHoveredIcon] = useState<string | null>(null)
 
   // Handle responsive collapse at 1000px
   useEffect(() => {
@@ -167,18 +218,26 @@ export default function Sidebar({
             <div className="space-y-1">
               <button
                 onClick={onNewProject}
+                onMouseEnter={() => setHoveredIcon('newproject')}
+                onMouseLeave={() => setHoveredIcon(null)}
                 className={`w-full text-left flex items-center text-[14px] transition text-[#A1A1AA] hover:text-white ${collapsed ? 'justify-center py-2' : 'px-4 py-2 gap-3'}`}
+                style={{ position: 'relative' }}
                 title={collapsed ? 'New Project' : undefined}
               >
                 <span>{newProjectIcon}</span>
                 {!collapsed && <span>New Project</span>}
+                <Tooltip show={hoveredIcon === 'newproject' && collapsed} label="New Project" />
               </button>
               <button
+                onMouseEnter={() => setHoveredIcon('allprojects')}
+                onMouseLeave={() => setHoveredIcon(null)}
                 className={`w-full text-left flex items-center text-[14px] transition text-[#A1A1AA] hover:text-white ${collapsed ? 'justify-center py-2' : 'px-4 py-2 gap-3'}`}
+                style={{ position: 'relative' }}
                 title={collapsed ? 'All Projects' : undefined}
               >
                 <span>{allProjectsIcon}</span>
                 {!collapsed && <span>All Projects</span>}
+                <Tooltip show={hoveredIcon === 'allprojects' && collapsed} label="All Projects" />
               </button>
               {selectedProject && !collapsed && (
                 <div className="relative z-50">
@@ -376,18 +435,38 @@ export default function Sidebar({
               </div>
             )}
             
+            {/* Gradient line above search icon when collapsed */}
+            {collapsed && (
+              <div className="flex justify-center" style={{ marginTop: '12px', marginBottom: '12px' }}>
+                <div style={{ 
+                  width: '24px', 
+                  height: '1px', 
+                  background: 'linear-gradient(90deg, var(--Border-Primary, #1A1A1E) 0%, var(--Border-Secondary, #26272B) 50%, var(--Border-Primary, #1A1A1E) 100%)' 
+                }} />
+              </div>
+            )}
+            
             <button 
               onClick={() => router.push('/dashboard')}
-              className={`mt-3 w-full rounded-lg py-2 text-[14px] font-bold text-white flex items-center justify-center ${collapsed ? '' : 'gap-2'}`} 
-              style={{ backgroundColor: '#875BF7' }}
-              title={collapsed ? 'New search' : undefined}
+              className={`w-full flex items-center justify-center ${collapsed ? 'w-12' : 'mt-3 rounded-lg py-2 text-[14px] font-bold text-white gap-2'}`} 
+              style={collapsed ? {
+                display: 'flex',
+                padding: '2px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderRadius: '10px',
+                background: '#875BF7',
+                position: 'relative'
+              } : { backgroundColor: '#875BF7', borderRadius: '8px', padding: '8px 0', position: 'relative' }}
+              onMouseEnter={() => collapsed && setHoveredIcon('search')}
+              onMouseLeave={() => setHoveredIcon(null)}
             >
               {!collapsed && 'New search'}
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
   <path fillRule="evenodd" clipRule="evenodd" d="M3.24982 11.5278C3.24982 7.23227 6.73205 3.75003 11.0276 3.75003C11.5645 3.75003 11.9998 4.18531 11.9998 4.72226C11.9998 5.2592 11.5645 5.69448 11.0276 5.69448C7.80593 5.69448 5.19426 8.30616 5.19426 11.5278C5.19426 14.7495 7.80593 17.3612 11.0276 17.3612C14.2493 17.3612 16.8609 14.7495 16.8609 11.5278C16.8609 10.9909 17.2962 10.5556 17.8331 10.5556C18.3701 10.5556 18.8054 10.9909 18.8054 11.5278C18.8054 13.3252 18.1957 14.9801 17.1719 16.2972L20.4651 19.5903C20.8447 19.97 20.8447 20.5856 20.4651 20.9653C20.0854 21.345 19.4698 21.345 19.0901 20.9653L15.797 17.6721C14.4799 18.696 12.825 19.3056 11.0276 19.3056C6.73205 19.3056 3.24982 15.8234 3.24982 11.5278Z" fill="white"/>
   <path d="M15.5 2.75003C15.8138 2.75003 16.0945 2.94543 16.2034 3.23975L16.4613 3.93678C16.8233 4.91513 16.9388 5.18094 17.1289 5.37109C17.3191 5.56124 17.5849 5.6767 18.5633 6.03872L19.2603 6.29664C19.5546 6.40555 19.75 6.6862 19.75 7.00003C19.75 7.31386 19.5546 7.59451 19.2603 7.70342L18.5633 7.96134C17.5849 8.32336 17.3191 8.43882 17.1289 8.62897C16.9388 8.81912 16.8233 9.08493 16.4613 10.0633L16.2034 10.7603C16.0945 11.0546 15.8138 11.25 15.5 11.25C15.1862 11.25 14.9055 11.0546 14.7966 10.7603L14.5387 10.0633C14.1767 9.08493 14.0612 8.81912 13.8711 8.62897C13.6809 8.43882 13.4151 8.32336 12.4367 7.96134L11.7397 7.70342C11.4454 7.59451 11.25 7.31386 11.25 7.00003C11.25 6.6862 11.4454 6.40555 11.7397 6.29664L12.4367 6.03872C13.4151 5.6767 13.6809 5.56124 13.8711 5.37109C14.0612 5.18094 14.1767 4.91513 14.5387 3.93678L14.7966 3.23975C14.9055 2.94543 15.1862 2.75003 15.5 2.75003Z" fill="white"/>
 </svg>
-            
+              <Tooltip show={hoveredIcon === 'search' && collapsed} label="New search" />
             </button>
             
             {!collapsed && (
@@ -419,77 +498,326 @@ export default function Sidebar({
               General
             </p>
             <div className="space-y-1">
-              {generalLinks.map((link) => {
-                const isActive = link.href && link.href !== '#' && pathname === link.href
-                return (
-                <button 
-                  key={link.label} 
-                  onClick={() => link.href && link.href !== '#' && router.push(link.href)}
-                  className="flex font-body items-center justify-between transition w-full" 
+             <div className=''>
+              {/* Shortlist */}
+              <button 
+                onClick={() => router.push('/shortlist')}
+                className="flex font-body items-center justify-between transition w-full" 
+                style={{ 
+                  display: 'flex',
+                  height: '40px',
+                  padding: '2px 0',
+                  alignItems: 'center'
+                }}
+              >
+                <span 
+                  className="flex items-center"
                   style={{ 
                     display: 'flex',
-                    height: '40px',
-                    padding: '2px 0',
-                    alignItems: 'center'
+                    padding: '8px 12px',
+                    alignItems: 'center',
+                    gap: '12px',
+                    flex: '1 0 0'
                   }}
                 >
+                  <span className="text-lg">
+                    {pathname === '/shortlist' ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M5.43383 9.71212C2.85767 10.3085 0.9375 12.6175 0.9375 15.375C0.9375 15.6856 1.18934 15.9375 1.5 15.9375H12C12.3106 15.9375 12.5625 15.6856 12.5625 15.375C12.5625 12.6175 10.6424 10.3085 8.06617 9.71212C9.59355 9.17055 10.6875 7.71308 10.6875 6C10.6875 3.82538 8.92462 2.0625 6.75 2.0625C4.57538 2.0625 2.8125 3.82538 2.8125 6C2.8125 7.71308 3.90643 9.17055 5.43383 9.71212Z" fill="#A48AFB"/>
+                        <path d="M16.9778 6.4037C17.1691 6.77108 17.0264 7.224 16.659 7.41534C15.93 7.79505 15.2288 8.6022 14.6811 9.40088C14.4162 9.7872 14.2035 10.1472 14.0572 10.4104C13.9842 10.5416 13.8758 10.7525 13.8387 10.8247C13.7205 11.0708 13.4777 11.2335 13.2051 11.249C12.9323 11.2644 12.6727 11.1304 12.5274 10.8991C12.3728 10.6528 12.1179 10.4163 11.8677 10.2279C11.7479 10.1378 11.5314 10.0017 11.4546 9.95385C11.0908 9.75608 10.9559 9.30075 11.1535 8.93685C11.3512 8.5728 11.8065 8.43803 12.1706 8.63573C12.3377 8.72648 12.6085 8.90805 12.77 9.02963C12.8455 9.08655 12.9274 9.15113 13.0123 9.22298C13.1367 9.0174 13.2813 8.78985 13.444 8.55255C14.0214 7.7106 14.8952 6.64277 15.9661 6.08497C16.3335 5.89363 16.7864 6.03633 16.9778 6.4037Z" fill="#A48AFB"/>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M5.43383 9.71212C2.85767 10.3085 0.9375 12.6175 0.9375 15.375C0.9375 15.6856 1.18934 15.9375 1.5 15.9375H12C12.3106 15.9375 12.5625 15.6856 12.5625 15.375C12.5625 12.6175 10.6424 10.3085 8.06617 9.71212C9.59355 9.17055 10.6875 7.71308 10.6875 6C10.6875 3.82538 8.92462 2.0625 6.75 2.0625C4.57538 2.0625 2.8125 3.82538 2.8125 6C2.8125 7.71308 3.90643 9.17055 5.43383 9.71212Z" fill="#A0A0AB"/>
+                        <path d="M16.9778 6.4037C17.1691 6.77108 17.0264 7.224 16.659 7.41534C15.93 7.79505 15.2288 8.6022 14.6811 9.40088C14.4162 9.7872 14.2035 10.1472 14.0572 10.4104C13.9842 10.5416 13.8758 10.7525 13.8387 10.8247C13.7205 11.0708 13.4777 11.2335 13.2051 11.249C12.9323 11.2644 12.6727 11.1304 12.5274 10.8991C12.3728 10.6528 12.1179 10.4163 11.8677 10.2279C11.7479 10.1378 11.5314 10.0017 11.4546 9.95385C11.0908 9.75608 10.9559 9.30075 11.1535 8.93685C11.3512 8.5728 11.8065 8.43803 12.1706 8.63573C12.3377 8.72648 12.6085 8.90805 12.77 9.02963C12.8455 9.08655 12.9274 9.15113 13.0123 9.22298C13.1367 9.0174 13.2813 8.78985 13.444 8.55255C14.0214 7.7106 14.8952 6.64277 15.9661 6.08497C16.3335 5.89363 16.7864 6.03633 16.9778 6.4037Z" fill="#A0A0AB"/>
+                      </svg>
+                    )}
+                  </span>
                   <span 
-                    className="flex items-center"
+                    className="font-body"
                     style={{ 
-                      display: 'flex',
-                      padding: '8px 12px',
-                      alignItems: 'center',
-                      gap: '12px',
-                      flex: '1 0 0'
+                      overflow: 'hidden',
+                      color: pathname === '/shortlist' ? '#A48AFB' : '#A0A0AB',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      textOverflow: 'ellipsis',
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 500,
+                      lineHeight: '20px'
                     }}
                   >
-                    <span className="text-lg">{isActive && link.iconActive ? link.iconActive : link.icon}</span>
-                    <span 
-                      className="font-body"
-                      style={{ 
-                        overflow: 'hidden',
-                        color: isActive ? '#A48AFB' : '#A0A0AB',
-                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                        textOverflow: 'ellipsis',
-                        fontSize: '14px',
-                        fontStyle: 'normal',
-                        fontWeight: 500,
-                        lineHeight: '20px'
-                      }}
-                    >
-                      {link.label}
-                    </span>
+                    Shortlist
                   </span>
-                  {link.badge && (
-                    <span className="text-[11px] px-2 py-0.5 rounded-sm border border-[#315f45]" style={{ backgroundColor: '#172820', color: '#caf7da' }}>{link.badge}</span>
-                  )}
-                </button>
-              )})}
+                </span>
+              </button>
+              </div>
+
+              {/* Email Automation */}
+              <button 
+                className="flex font-body items-center justify-between transition w-full" 
+                style={{ 
+                  display: 'flex',
+                  height: '40px',
+                  padding: '2px 0',
+                  alignItems: 'center'
+                }}
+              >
+                <span 
+                  className="flex items-center"
+                  style={{ 
+                    display: 'flex',
+                    padding: '8px 12px',
+                    alignItems: 'center',
+                    gap: '12px',
+                    flex: '1 0 0'
+                  }}
+                >
+                  <span className="text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M11.0117 2.0901C9.54487 2.05329 8.45513 2.0533 6.98828 2.0901L6.93214 2.09151C5.80012 2.11989 4.86871 2.14323 4.11798 2.27381C3.32121 2.4124 2.65407 2.6823 2.08902 3.2488C1.52692 3.81233 1.25779 4.46895 1.12144 5.25312C0.993487 5.98903 0.974122 6.89717 0.950684 7.99627L0.949477 8.05282C0.933502 8.80132 0.933509 9.19875 0.949492 9.94717L0.950699 10.0037C0.974129 11.1028 0.993494 12.0109 1.12145 12.7469C1.2578 13.531 1.52694 14.1877 2.08903 14.7512C2.65408 15.3177 3.32122 15.5876 4.11799 15.7262C4.86871 15.8568 5.80012 15.8801 6.93214 15.9085L6.98829 15.9099C8.45513 15.9467 9.54487 15.9467 11.0117 15.9099L11.0678 15.9085C12.1999 15.8801 13.1313 15.8567 13.882 15.7261C14.6788 15.5876 15.3459 15.3177 15.9109 14.7512C16.4731 14.1877 16.7422 13.531 16.8785 12.7468C17.0065 12.0109 17.0259 11.1028 17.0493 10.0037L17.0505 9.94717C17.0665 9.19867 17.0665 8.80132 17.0505 8.05282L17.0493 7.99635C17.0259 6.8972 17.0065 5.98903 16.8785 5.25312C16.7422 4.46895 16.4731 3.81233 15.9109 3.2488C15.5935 2.93046 15.2437 2.70577 14.8567 2.54541C14.7979 2.51328 14.7348 2.48904 14.669 2.47358C14.4217 2.38638 14.1597 2.32212 13.882 2.27382C13.1313 2.14323 12.1999 2.11989 11.0678 2.09151L11.0117 2.0901ZM15.5098 6.63772C15.4953 6.33359 15.488 6.18153 15.3779 6.12081C15.2678 6.0601 15.1324 6.13681 14.8616 6.29022L11.6848 8.09025C10.7101 8.64255 9.88575 9 8.99985 9C8.11395 9 7.28959 8.64255 6.31489 8.09025L3.13834 6.29039C2.86757 6.13697 2.73219 6.06026 2.62206 6.12097C2.51193 6.18168 2.50468 6.33375 2.49017 6.63789C2.47062 7.04778 2.46002 7.52295 2.44802 8.08477C2.4325 8.8119 2.4325 9.1881 2.44804 9.91522C2.47302 11.0852 2.49196 11.8795 2.59824 12.4907C2.69832 13.0663 2.86528 13.4083 3.15091 13.6946C3.43357 13.978 3.7802 14.1478 4.37516 14.2513C5.0038 14.3607 5.82373 14.3832 7.02593 14.4133C8.46765 14.4495 9.53235 14.4495 10.9741 14.4133C12.1763 14.3832 12.9962 14.3607 13.6249 14.2513C14.2198 14.1478 14.5664 13.978 14.8491 13.6946C15.1347 13.4083 15.3017 13.0663 15.4018 12.4907C15.508 11.8795 15.527 11.0852 15.552 9.91522C15.5675 9.1881 15.5675 8.8119 15.552 8.08477C15.54 7.52287 15.5293 7.04765 15.5098 6.63772Z" fill="#A0A0AB"/>
+                    </svg>
+                  </span>
+                  <span 
+                    className="font-body"
+                    style={{ 
+                      overflow: 'hidden',
+                      color: '#A0A0AB',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      textOverflow: 'ellipsis',
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 500,
+                      lineHeight: '20px'
+                    }}
+                  >
+                    Email Automation
+                  </span>
+                </span>
+              </button>
+
+              {/* Career Page */}
+              <button 
+                className="flex font-body items-center justify-between transition w-full" 
+                style={{ 
+                  display: 'flex',
+                  height: '40px',
+                  padding: '2px 0',
+                  alignItems: 'center'
+                }}
+              >
+                <span 
+                  className="flex items-center"
+                  style={{ 
+                    display: 'flex',
+                    padding: '8px 12px',
+                    alignItems: 'center',
+                    gap: '12px',
+                    flex: '1 0 0'
+                  }}
+                >
+                  <span className="text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M13.1824 1.81514C12.1274 1.68749 10.7738 1.68749 9.03915 1.6875C7.3045 1.68749 5.87261 1.68749 4.81766 1.81514C3.74417 1.94504 2.89452 2.21519 2.22206 2.82041C1.54111 3.43327 1.22931 4.2206 1.08097 5.2136C0.937478 6.17416 0.937485 7.49567 0.9375 9.04688C0.937485 10.5981 0.937478 11.8259 1.08097 12.7864C1.22931 13.7794 1.54111 14.5667 2.22206 15.1796C2.89452 15.7848 3.74417 16.0549 4.81766 16.1848C5.87261 16.3125 7.30451 16.3125 9.03915 16.3125C10.7738 16.3125 12.1274 16.3125 13.1824 16.1848C14.2558 16.0549 15.1054 15.7848 15.778 15.1796C16.4589 14.5667 16.7707 13.7794 16.919 12.7864C17.0625 11.8259 17.0625 10.5981 17.0625 9.04688C17.0625 7.4957 17.0625 6.17416 16.919 5.2136C16.7707 4.2206 16.4589 3.43327 15.778 2.82041C15.1054 2.21519 14.2558 1.94504 13.1824 1.81514ZM7.03332 5.46449C6.83194 5.43742 6.58698 5.43746 6.33131 5.4375H5.6687C5.41304 5.43746 5.16807 5.43742 4.9667 5.46449C4.74093 5.49485 4.4878 5.5682 4.27799 5.77799C4.0682 5.9878 3.99485 6.24093 3.96449 6.46669C3.93742 6.66807 3.93746 6.91303 3.93751 7.16869V7.83127C3.93746 8.08687 3.93742 8.33197 3.96449 8.53335C3.99485 8.7591 4.0682 9.01222 4.27799 9.222C4.4878 9.43185 4.74093 9.5052 4.9667 9.5355C5.16807 9.56257 5.41304 9.56257 5.66871 9.5625H6.33131C6.58698 9.56257 6.83194 9.56257 7.03332 9.5355C7.25909 9.5052 7.51222 9.43185 7.722 9.222C7.93185 9.01222 8.0052 8.7591 8.0355 8.53335C8.06257 8.33197 8.06257 8.08695 8.0625 7.83127V7.16871C8.06257 6.91303 8.06257 6.66807 8.0355 6.46669C8.0052 6.24093 7.93185 5.9878 7.722 5.77799C7.51222 5.5682 7.25909 5.49485 7.03332 5.46449ZM3.9375 12C3.9375 11.6894 4.18934 11.4375 4.5 11.4375H7.5C7.81065 11.4375 8.0625 11.6894 8.0625 12C8.0625 12.3106 7.81065 12.5625 7.5 12.5625H4.5C4.18934 12.5625 3.9375 12.3106 3.9375 12ZM10.5 5.4375C10.1894 5.4375 9.9375 5.68934 9.9375 6C9.9375 6.31066 10.1894 6.5625 10.5 6.5625H13.5C13.8106 6.5625 14.0625 6.31066 14.0625 6C14.0625 5.68934 13.8106 5.4375 13.5 5.4375H10.5ZM9.9375 9C9.9375 8.68935 10.1894 8.4375 10.5 8.4375H13.5C13.8106 8.4375 14.0625 8.68935 14.0625 9C14.0625 9.31065 13.8106 9.5625 13.5 9.5625H10.5C10.1894 9.5625 9.9375 9.31065 9.9375 9ZM10.5 11.4375C10.1894 11.4375 9.9375 11.6894 9.9375 12C9.9375 12.3106 10.1894 12.5625 10.5 12.5625H13.5C13.8106 12.5625 14.0625 12.3106 14.0625 12C14.0625 11.6894 13.8106 11.4375 13.5 11.4375H10.5Z" fill="#A0A0AB"/>
+                    </svg>
+                  </span>
+                  <span 
+                    className="font-body"
+                    style={{ 
+                      overflow: 'hidden',
+                      color: '#A0A0AB',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      textOverflow: 'ellipsis',
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 500,
+                      lineHeight: '20px'
+                    }}
+                  >
+                    Career Page
+                  </span>
+                </span>
+              </button>
+
+              {/* Messaging */}
+              <button 
+                className="flex font-body items-center justify-between transition w-full" 
+                style={{ 
+                  display: 'flex',
+                  height: '40px',
+                  padding: '2px 0',
+                  alignItems: 'center'
+                }}
+              >
+                <span 
+                  className="flex items-center"
+                  style={{ 
+                    display: 'flex',
+                    padding: '8px 12px',
+                    alignItems: 'center',
+                    gap: '12px',
+                    flex: '1 0 0'
+                  }}
+                >
+                  <span className="text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M7.33474 1.36705C8.42767 1.29439 9.57007 1.29424 10.6653 1.36705C14.0902 1.59472 16.8077 4.35943 17.0312 7.8168C17.0729 8.4636 17.0729 9.1326 17.0312 9.7794C16.8077 13.2367 14.0902 16.0015 10.6653 16.2292C9.57007 16.3019 8.42767 16.3018 7.33474 16.2292C6.91104 16.201 6.44983 16.1008 6.04379 15.9336C5.86522 15.86 5.74401 15.8103 5.65531 15.7777C5.59432 15.8197 5.51331 15.8792 5.39535 15.9662C4.80102 16.4044 4.05069 16.7119 2.98588 16.686L2.95158 16.6852C2.74616 16.6802 2.52721 16.675 2.34864 16.6405C2.13356 16.5988 1.86747 16.4948 1.70093 16.2109C1.51967 15.9019 1.59235 15.5893 1.66266 15.3925C1.72902 15.2068 1.84405 14.9889 1.96156 14.7664L1.97767 14.7358C2.32742 14.0731 2.42485 13.5314 2.23786 13.1703C1.61361 12.228 1.05204 11.0667 0.968848 9.7794C0.927051 9.1326 0.927051 8.4636 0.968848 7.8168C1.19229 4.35943 3.90975 1.59472 7.33474 1.36705ZM5.8125 7.125C5.8125 7.43566 6.06434 7.6875 6.375 7.6875H9C9.31065 7.6875 9.5625 7.43566 9.5625 7.125C9.5625 6.81434 9.31065 6.5625 9 6.5625H6.375C6.06434 6.5625 5.8125 6.81434 5.8125 7.125ZM5.8125 10.875C5.8125 11.1856 6.06434 11.4375 6.375 11.4375H11.625C11.9356 11.4375 12.1875 11.1856 12.1875 10.875C12.1875 10.5643 11.9356 10.3125 11.625 10.3125H6.375C6.06434 10.3125 5.8125 10.5643 5.8125 10.875Z" fill="#A0A0AB"/>
+                    </svg>
+                  </span>
+                  <span 
+                    className="font-body"
+                    style={{ 
+                      overflow: 'hidden',
+                      color: '#A0A0AB',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      textOverflow: 'ellipsis',
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 500,
+                      lineHeight: '20px'
+                    }}
+                  >
+                    Messaging
+                  </span>
+                </span>
+                <span className="text-[11px] px-2 py-0.5 rounded-sm border border-[#315f45]" style={{ backgroundColor: '#172820', color: '#caf7da' }}>10</span>
+              </button>
             </div>
           </div>
           )}
 
           {/* General section icons when collapsed */}
           {collapsed && (
-            <div className="space-y-1 mt-4">
-              {generalLinks.map((link) => {
-                const isActive = link.href && link.href !== '#' && pathname === link.href
-                return (
+            <div className="space-y-1" style={{ marginTop: '8px' }}>
+              {/* Shortlist */}
+              <div>
                 <button 
-                  key={link.label} 
-                  onClick={() => link.href && link.href !== '#' && router.push(link.href)}
+                  onClick={() => router.push('/shortlist')}
                   className="flex items-center justify-center transition w-full"
                   style={{ 
                     display: 'flex',
                     height: '40px',
                     padding: '2px 0',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    position: 'relative'
                   }}
-                  title={link.label}
+                  onMouseEnter={() => setHoveredIcon('shortlist')}
+                  onMouseLeave={() => setHoveredIcon(null)}
                 >
-                  <span className="text-lg">{isActive && link.iconActive ? link.iconActive : link.icon}</span>
+                  <div style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderRadius: '10px',
+                    background: pathname === '/shortlist' ? '#875BF7' : 'transparent'
+                  }}>
+                    {pathname === '/shortlist' ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 18 18" fill="none">
+                        <path d="M5.43383 9.71212C2.85767 10.3085 0.9375 12.6175 0.9375 15.375C0.9375 15.6856 1.18934 15.9375 1.5 15.9375H12C12.3106 15.9375 12.5625 15.6856 12.5625 15.375C12.5625 12.6175 10.6424 10.3085 8.06617 9.71212C9.59355 9.17055 10.6875 7.71308 10.6875 6C10.6875 3.82538 8.92462 2.0625 6.75 2.0625C4.57538 2.0625 2.8125 3.82538 2.8125 6C2.8125 7.71308 3.90643 9.17055 5.43383 9.71212Z" fill="#A48AFB"/>
+                        <path d="M16.9778 6.4037C17.1691 6.77108 17.0264 7.224 16.659 7.41534C15.93 7.79505 15.2288 8.6022 14.6811 9.40088C14.4162 9.7872 14.2035 10.1472 14.0572 10.4104C13.9842 10.5416 13.8758 10.7525 13.8387 10.8247C13.7205 11.0708 13.4777 11.2335 13.2051 11.249C12.9323 11.2644 12.6727 11.1304 12.5274 10.8991C12.3728 10.6528 12.1179 10.4163 11.8677 10.2279C11.7479 10.1378 11.5314 10.0017 11.4546 9.95385C11.0908 9.75608 10.9559 9.30075 11.1535 8.93685C11.3512 8.5728 11.8065 8.43803 12.1706 8.63573C12.3377 8.72648 12.6085 8.90805 12.77 9.02963C12.8455 9.08655 12.9274 9.15113 13.0123 9.22298C13.1367 9.0174 13.2813 8.78985 13.444 8.55255C14.0214 7.7106 14.8952 6.64277 15.9661 6.08497C16.3335 5.89363 16.7864 6.03633 16.9778 6.4037Z" fill="#A48AFB"/>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 18 18" fill="none">
+                        <path d="M5.43383 9.71212C2.85767 10.3085 0.9375 12.6175 0.9375 15.375C0.9375 15.6856 1.18934 15.9375 1.5 15.9375H12C12.3106 15.9375 12.5625 15.6856 12.5625 15.375C12.5625 12.6175 10.6424 10.3085 8.06617 9.71212C9.59355 9.17055 10.6875 7.71308 10.6875 6C10.6875 3.82538 8.92462 2.0625 6.75 2.0625C4.57538 2.0625 2.8125 3.82538 2.8125 6C2.8125 7.71308 3.90643 9.17055 5.43383 9.71212Z" fill="#A0A0AB"/>
+                        <path d="M16.9778 6.4037C17.1691 6.77108 17.0264 7.224 16.659 7.41534C15.93 7.79505 15.2288 8.6022 14.6811 9.40088C14.4162 9.7872 14.2035 10.1472 14.0572 10.4104C13.9842 10.5416 13.8758 10.7525 13.8387 10.8247C13.7205 11.0708 13.4777 11.2335 13.2051 11.249C12.9323 11.2644 12.6727 11.1304 12.5274 10.8991C12.3728 10.6528 12.1179 10.4163 11.8677 10.2279C11.7479 10.1378 11.5314 10.0017 11.4546 9.95385C11.0908 9.75608 10.9559 9.30075 11.1535 8.93685C11.3512 8.5728 11.8065 8.43803 12.1706 8.63573C12.3377 8.72648 12.6085 8.90805 12.77 9.02963C12.8455 9.08655 12.9274 9.15113 13.0123 9.22298C13.1367 9.0174 13.2813 8.78985 13.444 8.55255C14.0214 7.7106 14.8952 6.64277 15.9661 6.08497C16.3335 5.89363 16.7864 6.03633 16.9778 6.4037Z" fill="#A0A0AB"/>
+                      </svg>
+                    )}
+                  </div>
+                  <Tooltip show={hoveredIcon === 'shortlist'} label="Shortlist" />
                 </button>
-              )})}
+                {/* Gradient line after Shortlist */}
+                <div className="flex justify-center" style={{ marginTop: '12px', marginBottom: '12px' }}>
+                  <div style={{ 
+                    width: '24px', 
+                    height: '1px', 
+                    background: 'linear-gradient(90deg, var(--Border-Primary, #1A1A1E) 0%, var(--Border-Secondary, #26272B) 50%, var(--Border-Primary, #1A1A1E) 100%)' 
+                  }} />
+                </div>
+              </div>
+
+              {/* Email Automation */}
+              <button 
+                className="flex items-center justify-center transition w-full"
+                style={{ 
+                  display: 'flex',
+                  height: '40px',
+                  padding: '2px 0',
+                  alignItems: 'center',
+                  position: 'relative'
+                }}
+                onMouseEnter={() => setHoveredIcon('email')}
+                onMouseLeave={() => setHoveredIcon(null)}
+              >
+                <div style={{
+                  display: 'flex',
+                  padding: '8px',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '10px',
+                  background: 'transparent'
+                }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 18 18" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M11.0117 2.0901C9.54487 2.05329 8.45513 2.0533 6.98828 2.0901L6.93214 2.09151C5.80012 2.11989 4.86871 2.14323 4.11798 2.27381C3.32121 2.4124 2.65407 2.6823 2.08902 3.2488C1.52692 3.81233 1.25779 4.46895 1.12144 5.25312C0.993487 5.98903 0.974122 6.89717 0.950684 7.99627L0.949477 8.05282C0.933502 8.80132 0.933509 9.19875 0.949492 9.94717L0.950699 10.0037C0.974129 11.1028 0.993494 12.0109 1.12145 12.7469C1.2578 13.531 1.52694 14.1877 2.08903 14.7512C2.65408 15.3177 3.32122 15.5876 4.11799 15.7262C4.86871 15.8568 5.80012 15.8801 6.93214 15.9085L6.98829 15.9099C8.45513 15.9467 9.54487 15.9467 11.0117 15.9099L11.0678 15.9085C12.1999 15.8801 13.1313 15.8567 13.882 15.7261C14.6788 15.5876 15.3459 15.3177 15.9109 14.7512C16.4731 14.1877 16.7422 13.531 16.8785 12.7468C17.0065 12.0109 17.0259 11.1028 17.0493 10.0037L17.0505 9.94717C17.0665 9.19867 17.0665 8.80132 17.0505 8.05282L17.0493 7.99635C17.0259 6.8972 17.0065 5.98903 16.8785 5.25312C16.7422 4.46895 16.4731 3.81233 15.9109 3.2488C15.5935 2.93046 15.2437 2.70577 14.8567 2.54541C14.7979 2.51328 14.7348 2.48904 14.669 2.47358C14.4217 2.38638 14.1597 2.32212 13.882 2.27382C13.1313 2.14323 12.1999 2.11989 11.0678 2.09151L11.0117 2.0901ZM15.5098 6.63772C15.4953 6.33359 15.488 6.18153 15.3779 6.12081C15.2678 6.0601 15.1324 6.13681 14.8616 6.29022L11.6848 8.09025C10.7101 8.64255 9.88575 9 8.99985 9C8.11395 9 7.28959 8.64255 6.31489 8.09025L3.13834 6.29039C2.86757 6.13697 2.73219 6.06026 2.62206 6.12097C2.51193 6.18168 2.50468 6.33375 2.49017 6.63789C2.47062 7.04778 2.46002 7.52295 2.44802 8.08477C2.4325 8.8119 2.4325 9.1881 2.44804 9.91522C2.47302 11.0852 2.49196 11.8795 2.59824 12.4907C2.69832 13.0663 2.86528 13.4083 3.15091 13.6946C3.43357 13.978 3.7802 14.1478 4.37516 14.2513C5.0038 14.3607 5.82373 14.3832 7.02593 14.4133C8.46765 14.4495 9.53235 14.4495 10.9741 14.4133C12.1763 14.3832 12.9962 14.3607 13.6249 14.2513C14.2198 14.1478 14.5664 13.978 14.8491 13.6946C15.1347 13.4083 15.3017 13.0663 15.4018 12.4907C15.508 11.8795 15.527 11.0852 15.552 9.91522C15.5675 9.1881 15.5675 8.8119 15.552 8.08477C15.54 7.52287 15.5293 7.04765 15.5098 6.63772Z" fill="#A0A0AB"/>
+                  </svg>
+                </div>
+                <Tooltip show={hoveredIcon === 'email'} label="Email Automation" />
+              </button>
+
+              {/* Career Page */}
+              <button 
+                className="flex items-center justify-center transition w-full"
+                style={{ 
+                  display: 'flex',
+                  height: '40px',
+                  padding: '2px 0',
+                  alignItems: 'center',
+                  position: 'relative'
+                }}
+                onMouseEnter={() => setHoveredIcon('career')}
+                onMouseLeave={() => setHoveredIcon(null)}
+              >
+                <div style={{
+                  display: 'flex',
+                  padding: '8px',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '10px',
+                  background: 'transparent'
+                }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 18 18" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M13.1824 1.81514C12.1274 1.68749 10.7738 1.68749 9.03915 1.6875C7.3045 1.68749 5.87261 1.68749 4.81766 1.81514C3.74417 1.94504 2.89452 2.21519 2.22206 2.82041C1.54111 3.43327 1.22931 4.2206 1.08097 5.2136C0.937478 6.17416 0.937485 7.49567 0.9375 9.04688C0.937485 10.5981 0.937478 11.8259 1.08097 12.7864C1.22931 13.7794 1.54111 14.5667 2.22206 15.1796C2.89452 15.7848 3.74417 16.0549 4.81766 16.1848C5.87261 16.3125 7.30451 16.3125 9.03915 16.3125C10.7738 16.3125 12.1274 16.3125 13.1824 16.1848C14.2558 16.0549 15.1054 15.7848 15.778 15.1796C16.4589 14.5667 16.7707 13.7794 16.919 12.7864C17.0625 11.8259 17.0625 10.5981 17.0625 9.04688C17.0625 7.4957 17.0625 6.17416 16.919 5.2136C16.7707 4.2206 16.4589 3.43327 15.778 2.82041C15.1054 2.21519 14.2558 1.94504 13.1824 1.81514ZM7.03332 5.46449C6.83194 5.43742 6.58698 5.43746 6.33131 5.4375H5.6687C5.41304 5.43746 5.16807 5.43742 4.9667 5.46449C4.74093 5.49485 4.4878 5.5682 4.27799 5.77799C4.0682 5.9878 3.99485 6.24093 3.96449 6.46669C3.93742 6.66807 3.93746 6.91303 3.93751 7.16869V7.83127C3.93746 8.08687 3.93742 8.33197 3.96449 8.53335C3.99485 8.7591 4.0682 9.01222 4.27799 9.222C4.4878 9.43185 4.74093 9.5052 4.9667 9.5355C5.16807 9.56257 5.41304 9.56257 5.66871 9.5625H6.33131C6.58698 9.56257 6.83194 9.56257 7.03332 9.5355C7.25909 9.5052 7.51222 9.43185 7.722 9.222C7.93185 9.01222 8.0052 8.7591 8.0355 8.53335C8.06257 8.33197 8.06257 8.08695 8.0625 7.83127V7.16871C8.06257 6.91303 8.06257 6.66807 8.0355 6.46669C8.0052 6.24093 7.93185 5.9878 7.722 5.77799C7.51222 5.5682 7.25909 5.49485 7.03332 5.46449ZM3.9375 12C3.9375 11.6894 4.18934 11.4375 4.5 11.4375H7.5C7.81065 11.4375 8.0625 11.6894 8.0625 12C8.0625 12.3106 7.81065 12.5625 7.5 12.5625H4.5C4.18934 12.5625 3.9375 12.3106 3.9375 12ZM10.5 5.4375C10.1894 5.4375 9.9375 5.68934 9.9375 6C9.9375 6.31066 10.1894 6.5625 10.5 6.5625H13.5C13.8106 6.5625 14.0625 6.31066 14.0625 6C14.0625 5.68934 13.8106 5.4375 13.5 5.4375H10.5ZM9.9375 9C9.9375 8.68935 10.1894 8.4375 10.5 8.4375H13.5C13.8106 8.4375 14.0625 8.68935 14.0625 9C14.0625 9.31065 13.8106 9.5625 13.5 9.5625H10.5C10.1894 9.5625 9.9375 9.31065 9.9375 9ZM10.5 11.4375C10.1894 11.4375 9.9375 11.6894 9.9375 12C9.9375 12.3106 10.1894 12.5625 10.5 12.5625H13.5C13.8106 12.5625 14.0625 12.3106 14.0625 12C14.0625 11.6894 13.8106 11.4375 13.5 11.4375H10.5Z" fill="#A0A0AB"/>
+                  </svg>
+                </div>
+                <Tooltip show={hoveredIcon === 'career'} label="Career Page" />
+              </button>
+
+              {/* Messaging */}
+              <button 
+                className="flex items-center justify-center transition w-full"
+                style={{ 
+                  display: 'flex',
+                  height: '40px',
+                  padding: '2px 0',
+                  alignItems: 'center',
+                  position: 'relative'
+                }}
+                onMouseEnter={() => setHoveredIcon('messaging')}
+                onMouseLeave={() => setHoveredIcon(null)}
+              >
+                <div style={{
+                  display: 'flex',
+                  padding: '8px',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '10px',
+                  background: 'transparent'
+                }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 18 18" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M7.33474 1.36705C8.42767 1.29439 9.57007 1.29424 10.6653 1.36705C14.0902 1.59472 16.8077 4.35943 17.0312 7.8168C17.0729 8.4636 17.0729 9.1326 17.0312 9.7794C16.8077 13.2367 14.0902 16.0015 10.6653 16.2292C9.57007 16.3019 8.42767 16.3018 7.33474 16.2292C6.91104 16.201 6.44983 16.1008 6.04379 15.9336C5.86522 15.86 5.74401 15.8103 5.65531 15.7777C5.59432 15.8197 5.51331 15.8792 5.39535 15.9662C4.80102 16.4044 4.05069 16.7119 2.98588 16.686L2.95158 16.6852C2.74616 16.6802 2.52721 16.675 2.34864 16.6405C2.13356 16.5988 1.86747 16.4948 1.70093 16.2109C1.51967 15.9019 1.59235 15.5893 1.66266 15.3925C1.72902 15.2068 1.84405 14.9889 1.96156 14.7664L1.97767 14.7358C2.32742 14.0731 2.42485 13.5314 2.23786 13.1703C1.61361 12.228 1.05204 11.0667 0.968848 9.7794C0.927051 9.1326 0.927051 8.4636 0.968848 7.8168C1.19229 4.35943 3.90975 1.59472 7.33474 1.36705ZM5.8125 7.125C5.8125 7.43566 6.06434 7.6875 6.375 7.6875H9C9.31065 7.6875 9.5625 7.43566 9.5625 7.125C9.5625 6.81434 9.31065 6.5625 9 6.5625H6.375C6.06434 6.5625 5.8125 6.81434 5.8125 7.125ZM5.8125 10.875C5.8125 11.1856 6.06434 11.4375 6.375 11.4375H11.625C11.9356 11.4375 12.1875 11.1856 12.1875 10.875C12.1875 10.5643 11.9356 10.3125 11.625 10.3125H6.375C6.06434 10.3125 5.8125 10.5643 5.8125 10.875Z" fill="#A0A0AB"/>
+                  </svg>
+                </div>
+                <Tooltip show={hoveredIcon === 'messaging'} label="Messaging" />
+              </button>
             </div>
           )}
         </div>
@@ -497,50 +825,112 @@ export default function Sidebar({
 
       <div>
         <div className="space-y-1">
-          {supportLinks.map((link) => (
-            <button 
-              key={link.label} 
-              className={`flex items-center transition w-full ${collapsed ? 'justify-center' : ''}`}
+          {/* Support */}
+          <button 
+            className={`flex items-center transition w-full ${collapsed ? 'justify-center' : ''}`}
+            style={{ 
+              display: 'flex',
+              height: '40px',
+              padding: '2px 0',
+              alignItems: 'center',
+              position: 'relative'
+            }}
+            onMouseEnter={() => collapsed && setHoveredIcon('support')}
+            onMouseLeave={() => setHoveredIcon(null)}
+          >
+            <span 
+              className="flex items-center"
               style={{ 
                 display: 'flex',
-                height: '40px',
-                padding: '2px 0',
-                alignItems: 'center'
+                padding: collapsed ? '8px' : '8px 12px',
+                alignItems: 'center',
+                gap: collapsed ? '0' : '12px',
+                flex: collapsed ? undefined : '1 0 0',
+                justifyContent: collapsed ? 'center' : undefined
               }}
-              title={collapsed ? link.label : undefined}
             >
+              <span className="text-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path fillRule="evenodd" clipRule="evenodd" d="M9.00015 3C6.56164 3 4.73617 4.57114 4.52137 6.39047C4.61297 6.42977 4.70126 6.47013 4.78126 6.50675C5.04837 6.62609 5.55204 6.85111 5.74388 7.41893C5.81364 7.6254 5.81309 7.8462 5.81258 8.05163V11.4484C5.81309 11.6538 5.81364 11.8745 5.74388 12.0811C5.55204 12.6489 5.04837 12.8739 4.78126 12.9932C4.50907 13.1178 4.141 13.2858 3.87271 13.3076C3.57469 13.3316 3.27297 13.268 3.01118 13.121C2.77343 12.9876 2.59494 12.7699 2.41415 12.5492C2.34878 12.4699 2.22503 12.3239 2.13812 12.2231C1.97922 12.039 1.79879 11.83 1.65004 11.6353C1.4043 11.3137 1.15805 10.9283 1.03573 10.4806C0.904755 10.0011 0.904755 9.4989 1.03573 9.01942C1.12449 8.69452 1.28509 8.4078 1.49708 8.10682C1.70238 7.81538 2.05203 7.38823 2.39404 6.97283C2.44918 6.9029 2.52499 6.80677 2.58104 6.74257C2.68255 6.62629 2.82301 6.48456 3.01118 6.37895L3.0147 6.37697C3.23514 3.56214 5.93306 1.5 9.00015 1.5C12.0673 1.5 14.7652 3.56214 14.9857 6.37698L14.9891 6.37895C15.1773 6.48456 15.3178 6.62629 15.4193 6.74257C15.4753 6.80677 15.5512 6.90289 15.6063 6.97283C15.9483 7.38823 16.2979 7.81538 16.5033 8.10682C16.7153 8.4078 16.8758 8.69452 16.9646 9.01942C17.0956 9.4989 17.0956 10.0011 16.9646 10.4806C16.8423 10.9283 16.5961 11.3137 16.3503 11.6353C16.2016 11.83 16.0212 12.039 15.8623 12.2231C15.7754 12.3239 15.6516 12.4699 15.5862 12.5492C15.4082 12.7663 15.2324 12.9809 15.0002 13.1148V13.35C15.0002 15.2372 13.1564 16.5 11.2502 16.5H9.75015C9.33593 16.5 9.00015 16.1642 9.00015 15.75C9.00015 15.3358 9.33593 15 9.75015 15H11.2502C12.6576 15 13.5002 14.1137 13.5002 13.35V13.1185C13.401 13.0765 13.3052 13.0327 13.2191 12.9932C12.952 12.8739 12.4483 12.6489 12.2565 12.0811C12.1867 11.8745 12.1873 11.6538 12.1877 11.4484V8.05163C12.1873 7.8462 12.1867 7.6254 12.2565 7.41893C12.4483 6.85111 12.952 6.62609 13.2191 6.50675C13.2991 6.47013 13.3874 6.42977 13.479 6.39047C13.2642 4.57114 11.4387 3 9.00015 3Z" fill="#A0A0AB"/>
+                </svg>
+              </span>
+              {!collapsed && (
               <span 
-                className="flex items-center"
+                className="font-body"
                 style={{ 
-                  display: 'flex',
-                  padding: collapsed ? '8px' : '8px 12px',
-                  alignItems: 'center',
-                  gap: collapsed ? '0' : '12px',
-                  flex: collapsed ? undefined : '1 0 0',
-                  justifyContent: collapsed ? 'center' : undefined
+                  overflow: 'hidden',
+                  color: '#A0A0AB',
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  textOverflow: 'ellipsis',
+                  fontSize: '14px',
+                  fontStyle: 'normal',
+                  fontWeight: 500,
+                  lineHeight: '20px'
                 }}
               >
-                <span className="text-lg">{link.icon}</span>
-                {!collapsed && (
-                <span 
-                  className="font-body"
-                  style={{ 
-                    overflow: 'hidden',
-                    color: '#A0A0AB',
-                    fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                    textOverflow: 'ellipsis',
-                    fontSize: '14px',
-                    fontStyle: 'normal',
-                    fontWeight: 500,
-                    lineHeight: '20px'
-                  }}
-                >
-                  {link.label}
-                </span>
-                )}
+                Support
               </span>
-            </button>
-          ))}
+              )}
+            </span>
+            <Tooltip show={hoveredIcon === 'support' && collapsed} label="Support" />
+          </button>
+
+          {/* Settings */}
+          <button 
+            className={`flex items-center transition w-full ${collapsed ? 'justify-center' : ''}`}
+            style={{ 
+              display: 'flex',
+              height: '40px',
+              padding: '2px 0',
+              alignItems: 'center',
+              position: 'relative'
+            }}
+            onMouseEnter={() => collapsed && setHoveredIcon('settings')}
+            onMouseLeave={() => setHoveredIcon(null)}
+          >
+            <span 
+              className="flex items-center"
+              style={{ 
+                display: 'flex',
+                padding: collapsed ? '8px' : '8px 12px',
+                alignItems: 'center',
+                gap: collapsed ? '0' : '12px',
+                flex: collapsed ? undefined : '1 0 0',
+                justifyContent: collapsed ? 'center' : undefined
+              }}
+            >
+              <span className="text-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <g clipPath="url(#clip0_3193_10049)">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M9.1317 0.942427C9.04403 0.935858 8.95597 0.935858 8.8683 0.942427C8.4906 0.970732 8.18452 1.14116 7.90485 1.35997C7.64182 1.56578 7.35081 1.8568 7.01047 2.19717L6.43993 2.68567C6.43993 2.68567 6.13398 2.72546 5.64951 2.72546C5.1161 2.72543 4.66018 2.7254 4.29585 2.77439C3.90683 2.82669 3.53914 2.94395 3.24155 3.24155C2.94395 3.53914 2.82669 3.90683 2.77439 4.29585C2.7254 4.66018 2.72543 5.1161 2.72546 5.64951L2.68567 6.43993L2.19717 7.01047C1.85682 7.35079 1.56577 7.64182 1.35997 7.90485C1.14116 8.18452 0.970732 8.4906 0.942427 8.8683C0.935858 8.95597 0.935858 9.04403 0.942427 9.1317C0.970732 9.5094 1.14116 9.81548 1.35997 10.0951C1.56578 10.3582 1.8568 10.6492 2.19717 10.9895L2.68567 11.5601L2.72546 12.3505C2.72543 12.8839 2.7254 13.3398 2.77439 13.7041C2.82669 14.0932 2.94395 14.4608 3.24155 14.7584C3.53914 15.056 3.90683 15.1733 4.29585 15.2256C4.66018 15.2746 5.11611 15.2746 5.64952 15.2746L6.43993 15.3143L7.01047 15.8028C7.35078 16.1432 7.64182 16.4342 7.90485 16.64C8.18452 16.8589 8.4906 17.0293 8.8683 17.0576C8.95597 17.0641 9.04403 17.0641 9.1317 17.0576C9.5094 17.0293 9.81548 16.8589 10.0951 16.64C10.3582 16.4342 10.6492 16.1432 10.9895 15.8028L11.5601 15.3143L12.3505 15.2746C12.8839 15.2746 13.3398 15.2746 13.7041 15.2256C14.0932 15.1733 14.4608 15.056 14.7584 14.7584C15.056 14.4608 15.1733 14.0932 15.2256 13.7041C15.2746 13.3398 15.2746 12.8839 15.2746 12.3505L15.3143 11.5601L15.8029 10.9895C16.1432 10.6492 16.4342 10.3582 16.64 10.0951C16.8589 9.81548 17.0293 9.5094 17.0576 9.1317C17.0641 9.04403 17.0641 8.95597 17.0576 8.8683C17.0293 8.4906 16.8589 8.18452 16.64 7.90485C16.4342 7.64182 16.1432 7.3508 15.8028 7.01045L15.3143 6.43993L15.2746 5.64952C15.2746 5.11611 15.2746 4.66018 15.2256 4.29585C15.1733 3.90683 15.056 3.53914 14.7584 3.24155C14.4608 2.94395 14.0932 2.82669 13.7041 2.77439C13.3398 2.7254 12.8839 2.72543 12.3505 2.72546C11.8661 2.72546 11.516 2.66744 11.516 2.66744L10.9895 2.19717C10.6492 1.8568 10.3582 1.56578 10.0951 1.35997C9.81548 1.14116 9.5094 0.970732 9.1317 0.942427ZM9 5.8125C7.23959 5.8125 5.8125 7.23959 5.8125 9C5.8125 10.7604 7.23959 12.1875 9 12.1875C10.7604 12.1875 12.1875 10.7604 12.1875 9C12.1875 7.23959 10.7604 5.8125 9 5.8125Z" fill="#A0A0AB"/>
+                  </g>
+                  <defs>
+                    <clipPath id="clip0_3193_10049">
+                      <rect width="18" height="18" fill="white"/>
+                    </clipPath>
+                  </defs>
+                </svg>
+              </span>
+              {!collapsed && (
+              <span 
+                className="font-body"
+                style={{ 
+                  overflow: 'hidden',
+                  color: '#A0A0AB',
+                  fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                  textOverflow: 'ellipsis',
+                  fontSize: '14px',
+                  fontStyle: 'normal',
+                  fontWeight: 500,
+                  lineHeight: '20px'
+                }}
+              >
+                Settings
+              </span>
+              )}
+            </span>
+            <Tooltip show={hoveredIcon === 'settings' && collapsed} label="Settings" />
+          </button>
         </div>
       </div>
     </aside>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/dashboard/Sidebar'
 import ProjectModal from '@/components/dashboard/ProjectModal'
-import FilterModal from '@/components/dashboard/FilterModal'
+import FilterModal, { FilterData } from '@/components/dashboard/FilterModal'
 import SearchBar from '@/components/dashboard/SearchBar'
 import EmptyState from '@/components/dashboard/EmptyState'
 import UploadJDModal from '@/components/dashboard/UploadJDModal'
@@ -54,16 +54,71 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false)
   const [projectName, setProjectName] = useState('')
   const [userProjects, setUserProjects] = useState<string[]>([])
+  const [projectsData, setProjectsData] = useState<{_id: string, name: string}[]>([])
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [searchInput, setSearchInput] = useState('')
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [showUploadJDModal, setShowUploadJDModal] = useState(false)
   const [showProjectsDropdown, setShowProjectsDropdown] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [appliedFilters, setAppliedFilters] = useState<FilterData>({
+    preferredLocation: [],
+    postLocation: [],
+    availability: '',
+    industry: '',
+    minSalary: '',
+    maxSalary: '',
+    minExperience: '',
+    maxExperience: '',
+    skills: ''
+  })
+  const [savedSearches, setSavedSearches] = useState<{_id: string, query: string, createdAt: string}[]>([])
+  const [hasCheckedProjects, setHasCheckedProjects] = useState(false)
+
+  // Fetch saved searches for the selected project
+  const fetchSavedSearches = async (projectId: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${apiUrl}/api/projects/${projectId}/saved-searches`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSavedSearches(data.savedSearches || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching saved searches:', error)
+    }
+  }
 
   const handleSearch = (query: string) => {
     // Navigate to listing page with search query
     router.push(`/listing?query=${encodeURIComponent(query)}`)
+  }
+
+  const handleSavedSearchClick = (query: string) => {
+    // Navigate to listing page with the saved search query
+    router.push(`/listing?query=${encodeURIComponent(query)}`)
+  }
+
+  const handleApplyFilters = (filters: FilterData) => {
+    setAppliedFilters(filters)
+  }
+
+  // Calculate number of active filters
+  const getActiveFilterCount = () => {
+    let count = 0
+    if (appliedFilters.preferredLocation.length > 0) count++
+    if (appliedFilters.postLocation.length > 0) count++
+    if (appliedFilters.availability) count++
+    if (appliedFilters.industry) count++
+    if (appliedFilters.minSalary || appliedFilters.maxSalary) count++
+    if (appliedFilters.minExperience || appliedFilters.maxExperience) count++
+    if (appliedFilters.skills) count++
+    return count
   }
 
   // Show modal if no projects exist and fetch projects on mount
@@ -82,7 +137,7 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    if (userProjects.length === 0) {
+    if (hasCheckedProjects && userProjects.length === 0) {
       setShowModal(true)
       // Clear selected project if no projects exist
       setSelectedProject(null)
@@ -91,8 +146,30 @@ export default function Dashboard() {
       // Auto-select first project if none is selected
       setSelectedProject(userProjects[0])
       localStorage.setItem('selectedProject', userProjects[0])
+      // Also set the project ID
+      const project = projectsData.find(p => p.name === userProjects[0])
+      if (project) {
+        setSelectedProjectId(project._id)
+      }
     }
-  }, [userProjects.length, userProjects])
+  }, [userProjects.length, userProjects, hasCheckedProjects, selectedProject, projectsData])
+
+  // Update projectId when selected project changes
+  useEffect(() => {
+    if (selectedProject && projectsData.length > 0) {
+      const project = projectsData.find(p => p.name === selectedProject)
+      if (project) {
+        setSelectedProjectId(project._id)
+      }
+    }
+  }, [selectedProject, projectsData])
+
+  // Fetch saved searches when selected project ID changes
+  useEffect(() => {
+    if (selectedProjectId) {
+      fetchSavedSearches(selectedProjectId)
+    }
+  }, [selectedProjectId])
 
   // Persist selected project to localStorage
   useEffect(() => {
@@ -126,14 +203,26 @@ export default function Dashboard() {
       if (data.success && data.projects && data.projects.length > 0) {
         const projectNames = data.projects.map((p: any) => p.name)
         setUserProjects(projectNames)
-        // Don't auto-select any project on dashboard
+        setProjectsData(data.projects.map((p: {id: string, name: string}) => ({ _id: p.id, name: p.name })))
+        setHasCheckedProjects(true)
+        
+        // Restore selected project from localStorage and set the ID
+        const savedProject = localStorage.getItem('selectedProject')
+        if (savedProject) {
+          const project = data.projects.find((p: {name: string, id: string}) => p.name === savedProject)
+          if (project) {
+            setSelectedProjectId(project.id)
+          }
+        }
       } else {
         console.log('No projects found')
         setUserProjects([])
+        setHasCheckedProjects(true)
       }
     } catch (error) {
       console.error('Error fetching projects:', error)
       setUserProjects([])
+      setHasCheckedProjects(true)
     }
   }
 
@@ -183,6 +272,9 @@ export default function Dashboard() {
         onShowProjectsDropdownChange={setShowProjectsDropdown}
         isCollapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
+        savedSearches={savedSearches}
+        onSavedSearchClick={handleSavedSearchClick}
+        selectedProjectId={selectedProjectId}
       />
 
       <div className="min-h-screen transition-all duration-300" style={{ marginLeft: sidebarCollapsed ? '72px' : '256px' }}>
@@ -196,6 +288,7 @@ export default function Dashboard() {
               onFilterClick={() => setShowFilterModal(true)}
               onUploadJDClick={() => setShowUploadJDModal(true)}
               onSearch={handleSearch}
+              filterCount={getActiveFilterCount()}
             />
           </div>
         </main>
@@ -213,6 +306,8 @@ export default function Dashboard() {
       <FilterModal
         isOpen={showFilterModal}
         onClose={() => setShowFilterModal(false)}
+        onApply={handleApplyFilters}
+        initialFilters={appliedFilters}
       />
 
       <UploadJDModal 

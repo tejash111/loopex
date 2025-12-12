@@ -4,12 +4,26 @@ import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+export interface FilterData {
+  preferredLocation: string[]
+  postLocation: string[]
+  availability: string
+  industry: string
+  minSalary: string
+  maxSalary: string
+  minExperience: string
+  maxExperience: string
+  skills: string
+}
+
 interface FilterModalProps {
   isOpen: boolean
   onClose: () => void
+  onApply: (filters: FilterData) => void
+  initialFilters?: FilterData
 }
 
-export default function FilterModal({ isOpen, onClose }: FilterModalProps) {
+export default function FilterModal({ isOpen, onClose, onApply, initialFilters }: FilterModalProps) {
   const [activeFilterCategory, setActiveFilterCategory] = useState('location')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const locationRef = useRef<HTMLDivElement>(null)
@@ -20,18 +34,48 @@ export default function FilterModal({ isOpen, onClose }: FilterModalProps) {
 
   // Filter states
   const [preferredLocation, setPreferredLocation] = useState('')
-  const [preferredLocationTags, setPreferredLocationTags] = useState<string[]>(['Chennai, Tami...', 'Bangalore, Ka...', 'Mumbai'])
+  const [preferredLocationTags, setPreferredLocationTags] = useState<string[]>(initialFilters?.preferredLocation || [])
   const [postLocation, setPostLocation] = useState('')
-  const [postLocationTags, setPostLocationTags] = useState<string[]>([])
-  const [availability, setAvailability] = useState('')
+  const [postLocationTags, setPostLocationTags] = useState<string[]>(initialFilters?.postLocation || [])
+  const [availability, setAvailability] = useState(initialFilters?.availability || '')
   const [showAvailabilityDropdown, setShowAvailabilityDropdown] = useState(false)
-  const [industry, setIndustry] = useState('')
+  const [industry, setIndustry] = useState(initialFilters?.industry || '')
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false)
-  const [minSalary, setMinSalary] = useState('')
-  const [maxSalary, setMaxSalary] = useState('')
-  const [minExperience, setMinExperience] = useState('')
-  const [maxExperience, setMaxExperience] = useState('')
-  const [skills, setSkills] = useState('')
+  const [minSalary, setMinSalary] = useState(initialFilters?.minSalary || '')
+  const [maxSalary, setMaxSalary] = useState(initialFilters?.maxSalary || '')
+  const [minExperience, setMinExperience] = useState(initialFilters?.minExperience || '')
+  const [maxExperience, setMaxExperience] = useState(initialFilters?.maxExperience || '')
+  const [skills, setSkills] = useState(initialFilters?.skills || '')
+
+  const handleApply = () => {
+    const filters: FilterData = {
+      preferredLocation: preferredLocationTags,
+      postLocation: postLocationTags,
+      availability,
+      industry,
+      minSalary,
+      maxSalary,
+      minExperience,
+      maxExperience,
+      skills
+    }
+    onApply(filters)
+    onClose()
+  }
+
+  const handleClearAll = () => {
+    setPreferredLocationTags([])
+    setPostLocationTags([])
+    setAvailability('')
+    setIndustry('')
+    setMinSalary('')
+    setMaxSalary('')
+    setMinExperience('')
+    setMaxExperience('')
+    setSkills('')
+    setPreferredLocation('')
+    setPostLocation('')
+  }
 
   if (!isOpen) return null
 
@@ -152,13 +196,54 @@ export default function FilterModal({ isOpen, onClose }: FilterModalProps) {
           <h2 className="text-[20px] font-medium text-white" style={{ fontFamily: 'var(--font-body)' }}>
             Add your search filters
           </h2>
-          <Button
-            onClick={onClose}
-            className="rounded-xl px-6 py-2.5 text-[14px] font-medium text-white transition"
-            style={{ backgroundColor: '#875BF7' }}
-          >
-            Show results
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={handleClearAll}
+              style={{
+                display: 'flex',
+                padding: '8px 12px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '4px',
+                color: '#A48AFB',
+                fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                fontSize: '14px',
+                fontStyle: 'normal',
+                fontWeight: 600,
+                lineHeight: '20px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            >
+              Clear All
+            </button>
+            <button
+              onClick={handleApply}
+              style={{
+                display: 'flex',
+                padding: '8px 12px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '4px',
+                borderRadius: '10px',
+                background: '#875BF7',
+                color: '#FFF',
+                fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                fontSize: '14px',
+                fontStyle: 'normal',
+                fontWeight: 600,
+                lineHeight: '20px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Show results
+            </button>
+          </div>
         </div>
 
         {/* Content Area */}
