@@ -3,7 +3,7 @@
 import Sidebar from '@/components/dashboard/Sidebar'
 import ProjectModal from '@/components/dashboard/ProjectModal'
 import { Button } from '@/components/ui/button'
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Loader } from 'lucide-react'
 
@@ -1558,4 +1558,21 @@ const Listing = () => {
   )
 }
 
-export default Listing
+// Wrapper component with Suspense boundary
+export default function ListingPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        background: '#0A0A0C'
+      }}>
+        <Loader className="animate-spin" style={{ color: '#875BF7', width: '48px', height: '48px' }} />
+      </div>
+    }>
+      <Listing />
+    </Suspense>
+  )
+}
