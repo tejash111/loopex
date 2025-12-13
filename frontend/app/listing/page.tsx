@@ -2,9 +2,11 @@
 
 import Sidebar from '@/components/dashboard/Sidebar'
 import ProjectModal from '@/components/dashboard/ProjectModal'
+import EditQueryModal from '@/components/dashboard/EditQueryModal'
+import FilterModal, { FilterData } from '@/components/dashboard/FilterModal'
 import { Button } from '@/components/ui/button'
 import React, { useState, useEffect, useMemo, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Loader } from 'lucide-react'
 
 const socialIcons = [
@@ -55,10 +57,12 @@ const socialIcons = [
 
 const Listing = () => {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const searchQuery = searchParams.get('query') || ''
   
   const [showModal, setShowModal] = useState(false)
   const [showFilterModal, setShowFilterModal] = useState(false)
+  const [showEditQueryModal, setShowEditQueryModal] = useState(false)
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [userProjects, setUserProjects] = useState<string[]>([])
@@ -75,6 +79,17 @@ const Listing = () => {
   const [shortlistLoading, setShortlistLoading] = useState<string | null>(null)
   const [savedSearches, setSavedSearches] = useState<{_id: string, query: string, createdAt: string}[]>([])
   const lastSavedSearchRef = React.useRef<string | null>(null)
+  const [appliedFilters, setAppliedFilters] = useState<FilterData>({
+    preferredLocation: [],
+    postLocation: [],
+    availability: '',
+    industry: '',
+    minSalary: '',
+    maxSalary: '',
+    minExperience: '',
+    maxExperience: '',
+    skills: ''
+  })
 
   // Fetch saved searches for the selected project
   const fetchSavedSearches = async (projectId: string) => {
@@ -443,6 +458,31 @@ const Listing = () => {
   }
 
 
+  // Handle edit query save
+  const handleEditQuerySave = (newQuery: string) => {
+    if (newQuery.trim()) {
+      router.push(`/listing?query=${encodeURIComponent(newQuery.trim())}`)
+    }
+  }
+
+  // Handle apply filters
+  const handleApplyFilters = (filters: FilterData) => {
+    setAppliedFilters(filters)
+  }
+
+  // Calculate number of active filters
+  const getActiveFilterCount = () => {
+    let count = 0
+    if (appliedFilters.preferredLocation.length > 0) count++
+    if (appliedFilters.postLocation.length > 0) count++
+    if (appliedFilters.availability) count++
+    if (appliedFilters.industry) count++
+    if (appliedFilters.minSalary || appliedFilters.maxSalary) count++
+    if (appliedFilters.minExperience || appliedFilters.maxExperience) count++
+    if (appliedFilters.skills) count++
+    return count
+  }
+
   const candidatesData = filteredCandidates.length > 0 ? filteredCandidates : []
 
   if (loading) {
@@ -475,7 +515,7 @@ const Listing = () => {
         className="min-h-screen rounded-[24px] flex px-[16px] py-[12px] bg-[#131316] transition-all duration-300" 
         style={{ backgroundColor: '#131316', marginLeft: sidebarCollapsed ? '72px' : '256px' }}
       >
-      <main className={`flex-1 flex relative overflow-hidden bg-[#161619]  border border-[#26272B] rounded-[20px] transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`}>
+      <main className={`flex-1 flex relative overflow-hidden bg-[#161619]  border border-[#26272B] rounded-[20px] transition-all duration-300 ${showModal || showFilterModal || showEditQueryModal ? 'blur-[2px]' : ''}`}>
               {/* Left side - Candidate List */}
               <div className='flex-1 overflow-y-auto hide-scrollbar' style={{ maxHeight: 'calc(100vh - 48px)' }}>
               <div className='p-[6px]'>
@@ -535,6 +575,7 @@ const Listing = () => {
                     </h1>
                     <button 
                      className='ml-[4px] mr-[12px]'
+                     onClick={() => setShowEditQueryModal(true)}
                     >
                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
   <path fill-rule="evenodd" clip-rule="evenodd" d="M12.6635 2.31358C13.4982 1.47881 14.8517 1.47881 15.6864 2.31358C16.5213 3.14835 16.5213 4.50178 15.6864 5.33655L15.3417 5.68129L12.3188 2.65832L12.6635 2.31358ZM11.5233 3.45381L14.5462 6.47678L9.94947 11.0735C9.49677 11.5263 8.92947 11.8475 8.3084 12.0027L6.13649 12.5457C5.9448 12.5936 5.74202 12.5375 5.60231 12.3977C5.4626 12.258 5.40643 12.0553 5.45435 11.8636L5.99733 9.69165C6.15261 9.07058 6.47378 8.50328 6.92649 8.05058L11.5233 3.45381ZM7.8854 3.1875H7.8392C6.67989 3.18749 5.74524 3.18747 5.00224 3.2753C4.23328 3.36619 3.57527 3.55975 3.02046 4.01505C2.83585 4.16657 2.66657 4.33584 2.51506 4.52046C2.05975 5.07526 1.86619 5.73327 1.7753 6.50222C1.68747 7.24523 1.68749 8.17988 1.6875 9.33915V9.80318C1.68748 11.1329 1.68746 12.2046 1.8008 13.0475C1.91846 13.9226 2.17017 14.6595 2.75536 15.2447C3.34056 15.8299 4.07738 16.0816 4.95248 16.1993C5.79536 16.3125 6.86707 16.3125 8.19665 16.3125H8.66082C9.8201 16.3125 10.7547 16.3125 11.4978 16.2247C12.2667 16.1338 12.9247 15.9403 13.4796 15.485C13.6641 15.3335 13.8334 15.1642 13.9849 14.9795C14.4402 14.4248 14.6338 13.7668 14.7247 12.9978C14.8125 12.2548 14.8125 11.3201 14.8125 10.1609V10.1146C14.8125 9.7119 14.4861 9.38543 14.0833 9.38543C13.6806 9.38543 13.3542 9.7119 13.3542 10.1146C13.3542 11.331 13.353 12.1793 13.2765 12.8266C13.2018 13.4579 13.0644 13.8025 12.8576 14.0544C12.7667 14.1652 12.6651 14.2667 12.5544 14.3576C12.3024 14.5644 11.9579 14.7018 11.3265 14.7764C10.6792 14.853 9.83097 14.8542 8.61455 14.8542H8.24997C6.85446 14.8542 5.88116 14.8526 5.1468 14.7539C4.43341 14.658 4.05563 14.4826 3.78656 14.2135C3.51749 13.9444 3.34205 13.5666 3.24613 12.8532C3.14739 12.1189 3.14584 11.1455 3.14584 9.75V9.38543C3.14584 8.169 3.14703 7.32078 3.22355 6.67341C3.29817 6.04214 3.43564 5.69752 3.64238 5.44561C3.73328 5.33484 3.83485 5.23327 3.94562 5.14237C4.19753 4.93563 4.54214 4.79817 5.17343 4.72355C5.8208 4.64703 6.669 4.64584 7.8854 4.64584C8.28815 4.64584 8.61462 4.31938 8.61462 3.91667C8.61462 3.51396 8.28815 3.1875 7.8854 3.1875Z" fill="#A0A0AB"/>
@@ -575,6 +616,7 @@ const Listing = () => {
 
                     {/* Filter button */}
                     <button 
+                      onClick={() => setShowFilterModal(true)}
                       style={{
                         display: 'flex',
                         padding: 'var(--spacing-sm, 6px) var(--spacing-md, 8px)',
@@ -591,7 +633,8 @@ const Listing = () => {
                         fontStyle: 'normal',
                         fontWeight: 600,
                         lineHeight: 'var(--Line-height-text-xs, 18px)',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        position: 'relative'
                       }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -605,6 +648,26 @@ const Listing = () => {
                       <span>
                         Filter
                       </span>
+                      {getActiveFilterCount() > 0 && (
+                        <span style={{
+                          position: 'absolute',
+                          top: '-4px',
+                          right: '-4px',
+                          display: 'flex',
+                          minWidth: '16px',
+                          height: '16px',
+                          padding: '0 4px',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          borderRadius: '50%',
+                          background: '#875BF7',
+                          color: '#FFF',
+                          fontSize: '10px',
+                          fontWeight: 600
+                        }}>
+                          {getActiveFilterCount()}
+                        </span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1546,13 +1609,27 @@ const Listing = () => {
 
       </div>
 
-      {/* Modal - outside of blurred content */}
+      {/* Modals - outside of blurred content */}
       <ProjectModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         projectName={projectName}
         setProjectName={setProjectName}
         onCreateProject={handleCreateProject}
+      />
+
+      <EditQueryModal
+        isOpen={showEditQueryModal}
+        onClose={() => setShowEditQueryModal(false)}
+        currentQuery={searchQuery}
+        onSave={handleEditQuerySave}
+      />
+
+      <FilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApply={handleApplyFilters}
+        initialFilters={appliedFilters}
       />
     </>
   )
