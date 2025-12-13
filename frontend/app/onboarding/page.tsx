@@ -68,10 +68,10 @@ export default function Onboarding() {
 
   // Mock company data - in real app, this would come from an API
   const companyData: Record<string, { foundedYear: string; fundingStage: string; industry: string; businessCategory: string; logoUrl: string }> = useMemo(() => ({
-    'Red Bull': { foundedYear: '1987', fundingStage: 'Public', industry: 'E-commerce', businessCategory: 'B2C', logoUrl: '' },
-    'Red Hat': { foundedYear: '1993', fundingStage: 'Public', industry: 'SaaS', businessCategory: 'Enterprise', logoUrl: '' },
-    'Redfin': { foundedYear: '2004', fundingStage: 'Public', industry: 'E-commerce', businessCategory: 'B2C', logoUrl: '' },
-    'Reddit': { foundedYear: '2005', fundingStage: 'Public', industry: 'SaaS', businessCategory: 'B2C', logoUrl: '' }
+    'Red Bull': { foundedYear: '1987', fundingStage: 'Public', industry: 'E-commerce', businessCategory: 'B2C', logoUrl: 'https://imgs.search.brave.com/YtJYVlOE6m3uZhMEnimnkQm2izw4S6-9Zp1s4gzYsqE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/aWNvbnNjb3V0LmNv/bS9pY29uL2ZyZWUv/cG5nLTI1Ni9mcmVl/LXJlZGJ1bGwtMjgy/MzAxLnBuZz9mPXdl/YnAmdz0yNTY' },
+    'Red Hat': { foundedYear: '1993', fundingStage: 'Public', industry: 'SaaS', businessCategory: 'Enterprise', logoUrl: 'https://imgs.search.brave.com/itXPhUR2CWHkrUSYAjzuE_RjIctbGl80ptnmTOhKc5c/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzLzhhLzZm/LzEwLzhhNmYxMGZm/NDgxYjFmMzVlY2Mx/MjkxOWMyMjFjYjE1/LmpwZw' },
+    'Redfin': { foundedYear: '2004', fundingStage: 'Public', industry: 'E-commerce', businessCategory: 'B2C', logoUrl: 'https://imgs.search.brave.com/rsCuBqZg8KTZCRVIK_RuU3hI4WePmyT8UuxwnnSkStg/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9hc3Nl/dHMuc3RpY2twbmcu/Y29tL3RodW1icy82/MmM2YzQ3ZGVlZTk0/MTBmZTEzN2Q5MzYu/cG5n' },
+    'Reddit': { foundedYear: '2005', fundingStage: 'Public', industry: 'SaaS', businessCategory: 'B2C', logoUrl: 'https://imgs.search.brave.com/iT2nuQ6wgOe53vp7wj2kk7GqBXZ0SyftUTqEavYpCFU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWFn/ZXMuc2Vla2xvZ28u/Y29tL2xvZ28tcG5n/LzMxLzIvcmVkZGl0/LWxvZ28tcG5nX3Nl/ZWtsb2dvLTMxOTgx/OC5wbmc' }
   }), [])
 
   const companies = useMemo(() => Object.keys(companyData), [companyData])
