@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/dashboard/Sidebar'
 import ProjectModal from '@/components/dashboard/ProjectModal'
+import EditQueryModal from '@/components/dashboard/EditQueryModal'
 import { ChevronDown } from 'lucide-react'
 
 const socialIcons = {
@@ -69,6 +70,23 @@ export default function ShortlistPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [showProjectDropdown, setShowProjectDropdown] = useState(false)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [showShortlistDropdown, setShowShortlistDropdown] = useState(false)
+  const [selectedShortlistOption, setSelectedShortlistOption] = useState<'shortlisted' | 'not-interested'>('shortlisted')
+  const [showEditQueryModal, setShowEditQueryModal] = useState(false)
+  const [savedSearches, setSavedSearches] = useState<{_id: string, query: string, createdAt: string}[]>([])
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<{[key: string]: boolean}>({})
+  const [profileStatus, setProfileStatus] = useState<{[key: string]: string}>({})
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [selectedSort, setSelectedSort] = useState<string>('Sort by Date')
+  const [selectedFilters, setSelectedFilters] = useState<{[key: string]: boolean}>({
+    'Not Contacted': false,
+    'Email Sent': false,
+    'Interviewing': false,
+    'Hired': false,
+    'Rejected': false
+  })
 
   // Custom Checkbox Component
   const CustomCheckbox = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
@@ -152,6 +170,31 @@ export default function ShortlistPage() {
     fetchUserProjects()
   }, [])
 
+  // Fetch saved searches for the selected project
+  const fetchSavedSearches = async (projectId: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${apiUrl}/api/projects/${projectId}/saved-searches`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSavedSearches(data.savedSearches || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching saved searches:', error)
+    }
+  }
+
+  // Fetch saved searches when project changes
+  useEffect(() => {
+    if (selectedProjectId) {
+      fetchSavedSearches(selectedProjectId)
+    }
+  }, [selectedProjectId])
+
   // Fetch shortlisted profiles
   useEffect(() => {
     const fetchShortlistedProfiles = async () => {
@@ -217,6 +260,11 @@ export default function ShortlistPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
+  const handleSavedSearchClick = (query: string) => {
+    // Set the search query to the saved search
+    setSearchQuery(query)
+  }
+
   const tabs = ['All Profiles', 'Career Page', 'In house']
 
   return (
@@ -239,6 +287,10 @@ export default function ShortlistPage() {
         onShowProjectsDropdownChange={setShowProjectsDropdown}
         isCollapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
+        savedSearches={savedSearches}
+        onSavedSearchClick={handleSavedSearchClick}
+        selectedProjectId={selectedProjectId}
+        currentSearchQuery={searchQuery}
       />
 
       <div 
@@ -252,32 +304,31 @@ export default function ShortlistPage() {
           alignSelf: 'stretch',
           borderRadius: '24px 0 0 24px',
           marginLeft: sidebarCollapsed ? '72px' : '256px',
-          backgroundColor: '#131316'
+          backgroundColor: '#0E0E10'
         }}
       >
         <main 
-          className="w-full p-[6px]"
+          className="p-[6px]"
           style={{
            
             flex: '1 0 0',
             alignSelf: 'stretch',
             borderRadius: '20px',
-            border: '0.5px solid #26272B',
-            background: '#161619'
+            border: '0.5px solid #1A1A1E',
+            background: '#131315'
           }}
         >
           {/* Header with Project Selector */}
           <div 
             style={{ 
               display: 'flex',
-              width: '100%',
-              padding: '12px 16px',
-              flexDirection: 'row',
+              padding: '16px',
               alignItems: 'center',
-              gap: '8px',
-              borderRadius: '16px',
-              border: '0.5px solid #3F3F46',
-              background: '#131316',
+              gap: '12px',
+              alignSelf: 'stretch',
+              borderRadius: '12px',
+              border: '0.5px solid #26272B',
+              background: '#0E0E10',
               marginBottom: '8px'
             }}
           >
@@ -336,6 +387,8 @@ export default function ShortlistPage() {
               }
             </span>
 
+          
+
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
   <path d="M18 9.00005C18 9.00005 13.5811 15 12 15C10.4188 15 6 9 6 9" stroke="#A0A0AB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
@@ -350,45 +403,17 @@ export default function ShortlistPage() {
               alignSelf: 'stretch',
               width: '100%',
               borderRadius: '12px',
-              border: '0.5px solid #26272B',
-              background: '#131316',
+              border: '0.5px solid #1a1a1a',
+              background: '#0E0E10',
               boxShadow: '0 1px 2px 0 rgba(10, 13, 18, 0.05)',
               overflow: 'hidden'
             }}
           >
-            <div className="flex items-center justify-between p-4 border-b w-full" style={{ borderColor: '#26272B' }}>
-              <div className="flex items-center gap-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{
-                      display: 'flex',
-                      padding: '10px 12px',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      gap: '8px',
-                      borderRadius: activeTab === tab ? '10px' : '0',
-                      border: activeTab === tab ? '0.5px solid #26272B' : 'none',
-                      background: activeTab === tab ? '#1A1A1E' : 'transparent',
-                      color: activeTab === tab ? '#FFF' : '#70707B',
-                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                      fontFamily: '"Inter Display", sans-serif',
-                      fontSize: '14px',
-                      fontStyle: 'normal',
-                      fontWeight: 500,
-                      lineHeight: '20px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
+            <div className="flex items-center justify-between p-4 border-b w-full" style={{ borderColor: '#6272B' }}>
               <div className="flex items-center gap-3">
                 <div 
                   style={{
+                    position: 'relative',
                     display: 'flex',
                     padding: '8px 12px',
                     alignItems: 'center',
@@ -405,6 +430,8 @@ export default function ShortlistPage() {
                     placeholder="Search name, company, etc."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowSearchDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
                     style={{ 
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -428,10 +455,93 @@ export default function ShortlistPage() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M12 6.00003C12 6.00003 9.05407 10 8 10C6.94587 10 4 6 4 6" stroke="#70707B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
+
+                  {/* Recent searches dropdown */}
+                  {showSearchDropdown && savedSearches.length > 0 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        marginTop: '4px',
+                        borderRadius: '12px',
+                        border: '0.5px solid #26272B',
+                        background: '#1A1A1E',
+                        boxShadow: '0 8px 16px 0 rgba(0, 0, 0, 0.16)',
+                        zIndex: 10,
+                        maxHeight: '200px',
+                        overflowY: 'auto'
+                      }}
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      <div style={{ padding: '8px' }}>
+                        <span style={{ 
+                          display: 'block',
+                          padding: '8px 12px',
+                          color: '#70707B',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          lineHeight: '18px',
+                          textTransform: 'uppercase'
+                        }}>
+                          Recent Searches
+                        </span>
+                        {[...savedSearches].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5).map((search) => (
+                          <button
+                            key={search._id}
+                            onClick={() => {
+                              setSearchQuery(search.query)
+                              setShowSearchDropdown(false)
+                            }}
+                            style={{
+                              display: 'flex',
+                              width: '100%',
+                              padding: '8px 12px',
+                              alignItems: 'center',
+                              gap: '8px',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#A0A0AB',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              lineHeight: '20px',
+                              textAlign: 'left',
+                              borderRadius: '8px',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#26272B'
+                              e.currentTarget.style.color = '#FFFFFF'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                              e.currentTarget.style.color = '#A0A0AB'
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <path d="M3 8C3 5.239 5.239 3 8 3C9.38071 3 10.6261 3.6789 11.3858 4.72632M13 8C13 10.761 10.761 13 8 13C6.3934 13 5.04799 12.2237 4.27671 11.0021M10 5.5L13 2.5M3 13.5L5 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span style={{ 
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              flex: 1
+                            }}>
+                              {search.query}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
                   style={{
+                    position: 'relative',
                     display: 'flex',
                     padding: '10px 14px',
                     justifyContent: 'center',
@@ -455,10 +565,66 @@ export default function ShortlistPage() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M12 6.00003C12 6.00003 9.05407 10 8 10C6.94587 10 4 6 4 6" stroke="#A48AFB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
+
+                  {/* Sort Dropdown */}
+                  {showSortDropdown && (
+                    <div
+                      style={{
+                        position: 'fixed',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        border: '0.5px solid #26272B',
+                        background: '#1A1A1E',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        zIndex: 1000,
+                        minWidth: '140px'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {['Sort by Date', 'Sort by Availability'].map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => {
+                            setSelectedSort(option)
+                            setShowSortDropdown(false)
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: selectedSort === option ? '#26272B' : 'transparent',
+                            color: '#FFF',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selectedSort !== option) {
+                              e.currentTarget.style.background = '#26272B'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (selectedSort !== option) {
+                              e.currentTarget.style.background = 'transparent'
+                            }
+                          }}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </button>
 
                 <button
+                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                   style={{
+                    position: 'relative',
                     display: 'flex',
                     padding: '10px 14px',
                     justifyContent: 'center',
@@ -487,12 +653,91 @@ export default function ShortlistPage() {
                     <path fillRule="evenodd" clipRule="evenodd" d="M5.98317 2.16797H6.01683C6.31314 2.16796 6.5605 2.16796 6.7636 2.18182C6.975 2.19624 7.17467 2.22734 7.36827 2.30752C7.81747 2.4936 8.1744 2.8505 8.36047 3.29972C8.44067 3.49331 8.47173 3.693 8.48613 3.9044C8.5 4.10747 8.5 4.35482 8.5 4.65113V4.68481C8.5 4.98112 8.5 5.22847 8.48613 5.43155C8.47173 5.64295 8.44067 5.84263 8.36047 6.03622C8.1744 6.48544 7.81747 6.84237 7.36827 7.02844C7.17467 7.10864 6.975 7.1397 6.7636 7.1541C6.5605 7.16797 6.31315 7.16797 6.01684 7.16797H5.98316C5.68685 7.16797 5.4395 7.16797 5.23643 7.1541C5.02503 7.1397 4.82534 7.10864 4.63175 7.02844C4.18253 6.84237 3.82563 6.48544 3.63955 6.03622C3.55937 5.84263 3.52827 5.64295 3.51385 5.43155C3.49999 5.22847 3.49999 4.98111 3.5 4.6848V4.65114C3.49999 4.35483 3.49999 4.10747 3.51385 3.9044C3.52827 3.693 3.55937 3.49331 3.63955 3.29972C3.82563 2.8505 4.18253 2.4936 4.63175 2.30752C4.82534 2.22734 5.02503 2.19624 5.23643 2.18182C5.4395 2.16796 5.68686 2.16796 5.98317 2.16797Z" fill="#A48AFB"/>
                     <path fillRule="evenodd" clipRule="evenodd" d="M9.98313 8.83203H10.0169C10.3131 8.83203 10.5605 8.83203 10.7636 8.8459C10.975 8.8603 11.1747 8.89136 11.3683 8.97156C11.8175 9.15763 12.1744 9.51456 12.3605 9.96376C12.4407 10.1574 12.4717 10.357 12.4861 10.5684C12.5 10.7715 12.5 11.0189 12.5 11.3152V11.3489C12.5 11.6452 12.5 11.8926 12.4861 12.0956C12.4717 12.307 12.4407 12.5067 12.3605 12.7003C12.1744 13.1495 11.8175 13.5064 11.3683 13.6925C11.1747 13.7727 10.975 13.8038 10.7636 13.8182C10.5605 13.832 10.3131 13.832 10.0169 13.832H9.98313C9.68687 13.832 9.43947 13.832 9.2364 13.8182C9.025 13.8038 8.82533 13.7727 8.63173 13.6925C8.18253 13.5064 7.8256 13.1495 7.63953 12.7003C7.55933 12.5067 7.52827 12.307 7.51387 12.0956C7.5 11.8926 7.5 11.6452 7.5 11.3489V11.3152C7.5 11.0189 7.5 10.7715 7.51387 10.5684C7.52827 10.357 7.55933 10.1574 7.63953 9.96376C7.8256 9.51456 8.18253 9.15763 8.63173 8.97156C8.82533 8.89136 9.025 8.8603 9.2364 8.8459C9.43947 8.83203 9.68687 8.83203 9.98313 8.83203Z" fill="#A48AFB"/>
                   </svg>
+
+                  {/* Filter Dropdown */}
+                  {showFilterDropdown && (
+                    <div
+                      style={{
+                        position: 'fixed',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '0.5px solid #26272B',
+                        background: '#1A1A1E',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        zIndex: 1000,
+                        minWidth: '160px'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {Object.keys(selectedFilters).map((filter) => (
+                        <label
+                          key={filter}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            padding: '4px 0'
+                          }}
+                        >
+                          <CustomCheckbox
+                            checked={selectedFilters[filter as keyof typeof selectedFilters]}
+                            onChange={() => {
+                              setSelectedFilters(prev => ({
+                                ...prev,
+                                [filter]: !prev[filter as keyof typeof selectedFilters]
+                              }))
+                            }}
+                          />
+                          <span style={{
+                            color: '#FFF',
+                            fontSize: '12px',
+                            fontWeight: 500
+                          }}>
+                            {filter}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    style={{
+                      display: 'flex',
+                      padding: '10px 12px',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '8px',
+                      borderRadius: activeTab === tab ? '10px' : '0',
+                      border: activeTab === tab ? '0.5px solid #26272B' : 'none',
+                      background: activeTab === tab ? '#1A1A1E' : 'transparent',
+                      color: activeTab === tab ? '#FFF' : '#70707B',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto w-full">
+            <div className="overflow-x-auto w-full" style={{ position: 'relative' }}>
               <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ 
@@ -501,7 +746,7 @@ export default function ShortlistPage() {
                     alignItems: 'center',
                     alignSelf: 'stretch',
                     borderBottom: '0.5px solid #26272B',
-                    background: '#1A1A1E'
+                    background: '#131316'
                   }}>
                     <th style={{ 
                       width: '60px', 
@@ -654,7 +899,7 @@ export default function ShortlistPage() {
                             alignItems: 'center',
                             alignSelf: 'stretch',
                             borderBottom: index === filteredArray.length - 1 ? 'none' : '0.5px solid #26272B',
-                            background: '#131316'
+                            background: '#0E0E10'
                           }}
                           className="hover:bg-[#26272B] transition-colors cursor-pointer"
                         >
@@ -727,16 +972,77 @@ export default function ShortlistPage() {
                             height: '100%',
                             borderRight: '0.5px solid #26272B'
                           }}>
-                            <button
-                              className="flex items-center gap-2 px-3 py-1.5 rounded-md"
-                              style={{
-                                background: '#26272B',
-                                border: '0.5px solid #3F3F46'
-                              }}
-                            >
-                              <span style={{ color: '#FFF', fontSize: '12px' }}>Not Contacted</span>
-                              <ChevronDown size={12} color="#70707B" />
-                            </button>
+                            <div style={{ position: 'relative', width: '100%', zIndex: 50 }}>
+                              <button
+                                onClick={() => setStatusDropdownOpen(prev => ({ ...prev, [item._id]: !prev[item._id] }))}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-md"
+                                style={{
+                                  background: '#26272B',
+                                  border: '0.5px solid #3F3F46',
+                                  width: '100%',
+                                  justifyContent: 'space-between'
+                                }}
+                              >
+                                <span style={{ color: '#FFF', fontSize: '12px' }}>
+                                  {profileStatus[item._id] || 'Not Contacted'}
+                                </span>
+                                <ChevronDown size={12} color="#70707B" />
+                              </button>
+
+                              {/* Status Dropdown */}
+                              {statusDropdownOpen[item._id] && (
+                                <div
+                                  style={{
+                                    position: 'fixed',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px',
+                                    padding: '8px',
+                                    borderRadius: '8px',
+                                    border: '0.5px solid #26272B',
+                                    background: '#1A1A1E',
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                    zIndex: 1000,
+                                    minWidth: '140px'
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {['Not Contacted', 'Email Sent', 'Interviewing', 'Hired', 'Rejected'].map((status) => (
+                                    <button
+                                      key={status}
+                                      onClick={() => {
+                                        setProfileStatus(prev => ({ ...prev, [item._id]: status }))
+                                        setStatusDropdownOpen(prev => ({ ...prev, [item._id]: false }))
+                                      }}
+                                      style={{
+                                        padding: '8px 12px',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        background: profileStatus[item._id] === status ? '#26272B' : 'transparent',
+                                        color: '#FFF',
+                                        fontSize: '12px',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'background 0.2s'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        if (profileStatus[item._id] !== status) {
+                                          e.currentTarget.style.background = '#26272B'
+                                        }
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        if (profileStatus[item._id] !== status) {
+                                          e.currentTarget.style.background = 'transparent'
+                                        }
+                                      }}
+                                    >
+                                      {status}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td style={{ 
                             flex: 1, 
@@ -825,12 +1131,215 @@ export default function ShortlistPage() {
         </main>
       </div>
 
+      {/* Fixed Action Buttons */}
+      {selectedItems.size > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            padding: '0px',
+            alignItems: 'flex-start',
+            gap: '6px',
+            zIndex: 1000
+          }}
+        >
+          {/* Shortlist Button */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowShortlistDropdown(!showShortlistDropdown)}
+              style={{
+                display: 'flex',
+                height: '56px',
+                padding: '16px 24px',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderRadius: '100px',
+                background: '#875BF7',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#FFF',
+                fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                fontFamily: '"Inter Display", sans-serif',
+                fontSize: '16px',
+                fontStyle: 'normal',
+                fontWeight: 600,
+                lineHeight: '24px',
+                minWidth: '200px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                Shortlist
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M15.8337 8.50008C15.8337 8.50008 11.7793 14.1667 10.0003 14.1667C8.22136 14.1667 4.16699 8.5 4.16699 8.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="7" viewBox="0 0 12 7" fill="none">
+                <path d="M10.75 0.750041C10.75 0.750041 7.06758 5.75 5.75 5.75C4.43233 5.75 0.75 0.75 0.75 0.75" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {/* Dropdown */}
+            {showShortlistDropdown && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '64px',
+                  left: 0,
+                  display: 'flex',
+                  padding: '8px',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: '4px',
+                  borderRadius: '12px',
+                  border: '0.5px solid #26272B',
+                  background: '#1A1A1E',
+                  boxShadow: '0 4px 28.8px 0 rgba(0, 0, 0, 0.13)',
+                  minWidth: '200px',
+                  zIndex: 1001
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setSelectedShortlistOption('shortlisted')
+                    setShowShortlistDropdown(false)
+                  }}
+                  style={{
+                    display: 'flex',
+                    padding: '8px 12px',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: selectedShortlistOption === 'shortlisted' ? '#26272B' : 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#FFF',
+                    fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                    fontFamily: '"Inter Display", sans-serif',
+                    fontSize: '14px',
+                    fontStyle: 'normal',
+                    fontWeight: 500,
+                    lineHeight: '20px',
+                    textAlign: 'left',
+                    width: '100%'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedShortlistOption !== 'shortlisted') {
+                      e.currentTarget.style.background = '#26272B'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedShortlistOption !== 'shortlisted') {
+                      e.currentTarget.style.background = 'transparent'
+                    }
+                  }}
+                >
+                  Shortlisted
+                </button>
+                <button
+                  onClick={async () => {
+                    setSelectedShortlistOption('not-interested')
+                    setShowShortlistDropdown(false)
+                    
+                    // Remove selected items from shortlist
+                    try {
+                      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+                      const deletePromises = Array.from(selectedItems).map(shortlistId =>
+                        fetch(`${apiUrl}/api/shortlist/${shortlistId}`, {
+                          method: 'DELETE',
+                          credentials: 'include'
+                        })
+                      )
+                      
+                      await Promise.all(deletePromises)
+                      
+                      // Remove from local state
+                      setShortlistedProfiles(prev => prev.filter(profile => !selectedItems.has(profile._id)))
+                      setSelectedItems(new Set())
+                    } catch (error) {
+                      console.error('Error removing from shortlist:', error)
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    padding: '8px 12px',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: selectedShortlistOption === 'not-interested' ? '#26272B' : 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#FFF',
+                    fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                    fontFamily: '"Inter Display", sans-serif',
+                    fontSize: '14px',
+                    fontStyle: 'normal',
+                    fontWeight: 500,
+                    lineHeight: '20px',
+                    textAlign: 'left',
+                    width: '100%'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedShortlistOption !== 'not-interested') {
+                      e.currentTarget.style.background = '#26272B'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedShortlistOption !== 'not-interested') {
+                      e.currentTarget.style.background = 'transparent'
+                    }
+                  }}
+                >
+                  Not Interested
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Not Interested Button - Hidden when dropdown is shown */}
+          {!showShortlistDropdown && (
+            <button
+              style={{
+                display: 'flex',
+                height: '56px',
+                padding: '16px 24px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '6px',
+                borderRadius: '100px',
+                background: '#26272B',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#FFF',
+                fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                fontFamily: '"Inter Display", sans-serif',
+                fontSize: '16px',
+                fontStyle: 'normal',
+                fontWeight: 600,
+                lineHeight: '24px'
+              }}
+            >
+              Not Interested
+            </button>
+          )}
+        </div>
+      )}
+
       <ProjectModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         projectName={projectName}
         setProjectName={setProjectName}
         onCreateProject={handleCreateProject}
+      />
+      
+      <EditQueryModal
+        isOpen={showEditQueryModal}
+        onClose={() => setShowEditQueryModal(false)}
+        currentQuery={searchQuery}
+        onSave={setSearchQuery}
       />
     </>
   )

@@ -78,6 +78,7 @@ const Listing = () => {
   const [shortlistedProfiles, setShortlistedProfiles] = useState<Set<string>>(new Set())
   const [shortlistLoading, setShortlistLoading] = useState<string | null>(null)
   const [savedSearches, setSavedSearches] = useState<{_id: string, query: string, createdAt: string}[]>([])
+  const [showShortlistDropdown, setShowShortlistDropdown] = useState(false)
   const lastSavedSearchRef = React.useRef<string | null>(null)
   const [appliedFilters, setAppliedFilters] = useState<FilterData>({
     preferredLocation: [],
@@ -90,6 +91,13 @@ const Listing = () => {
     maxExperience: '',
     skills: ''
   })
+
+  // Refs for scroll sections
+  const overviewSectionRef = React.useRef<HTMLDivElement>(null)
+  const experienceSectionRef = React.useRef<HTMLDivElement>(null)
+  const educationSectionRef = React.useRef<HTMLDivElement>(null)
+  const skillSectionRef = React.useRef<HTMLDivElement>(null)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
 
   // Fetch saved searches for the selected project
   const fetchSavedSearches = async (projectId: string) => {
@@ -483,11 +491,43 @@ const Listing = () => {
     return count
   }
 
+  // Scroll detection for tab highlighting
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) return
+
+    const handleScroll = () => {
+      const sections = [
+        { ref: overviewSectionRef, name: 'Overview' },
+        { ref: experienceSectionRef, name: 'Experience' },
+        { ref: educationSectionRef, name: 'Education' },
+        { ref: skillSectionRef, name: 'Skill' }
+      ]
+
+      const scrollTop = scrollContainer.scrollTop
+      const containerTop = scrollContainer.getBoundingClientRect().top
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i]
+        if (section.ref.current) {
+          const sectionTop = section.ref.current.getBoundingClientRect().top - containerTop
+          if (scrollTop >= sectionTop - 100) {
+            setActiveTab(section.name)
+            break
+          }
+        }
+      }
+    }
+
+    scrollContainer.addEventListener('scroll', handleScroll)
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+  }, [selectedCandidate])
+
   const candidatesData = filteredCandidates.length > 0 ? filteredCandidates : []
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#131316' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0E0E10' }}>
         <Loader className='animate-spin'/>
       </div>
     )
@@ -512,16 +552,16 @@ const Listing = () => {
         currentSearchQuery={searchQuery}
       />
       <div 
-        className="min-h-screen rounded-[24px] flex px-[16px] py-[12px] bg-[#131316] transition-all duration-300" 
-        style={{ backgroundColor: '#131316', marginLeft: sidebarCollapsed ? '72px' : '256px' }}
+        className="min-h-screen rounded-[24px] flex px-[16px] py-[12px] bg-[#0E0E10] transition-all duration-300" 
+        style={{ backgroundColor: '#0E0E10', marginLeft: sidebarCollapsed ? '72px' : '256px' }}
       >
-      <main className={`flex-1 flex relative overflow-hidden bg-[#161619]  border border-[#26272B] rounded-[20px] transition-all duration-300 ${showModal || showFilterModal || showEditQueryModal ? 'blur-[2px]' : ''}`}>
+      <main className={`flex-1 flex relative overflow-hidden bg-[#0E0E10]  rounded-[20px] transition-all duration-300 ${showModal || showFilterModal || showEditQueryModal ? 'blur-[2px]' : ''}`}>
               {/* Left side - Candidate List */}
               <div className='flex-1 overflow-y-auto hide-scrollbar' style={{ maxHeight: 'calc(100vh - 48px)' }}>
               <div className='p-[6px]'>
                 {/* Header Section */}
                 <div 
-                  className=' items-center justify-between px-[20px] py-[14px] border-[#3F3F46] border rounded-xl mb-[24px]'
+                  className=' items-center justify-between px-[20px] py-[14px] border-[#1A1A1E] border rounded-xl mb-[24px]'
                   style={{
                     background: '#131316'
                   }}
@@ -690,7 +730,7 @@ const Listing = () => {
                         border: selectedCandidate?.id === candidate.id 
                           ? '1px solid var(--Surface-Brand-Primary, #875BF7)' 
                           : '0.5px solid var(--Border-Secondary, #26272B)',
-                        background: 'var(--Surface-Secondary, #1A1A1E)',
+                        background: '#131316',
                         marginBottom: '16px',
                         cursor: 'pointer',
                         transition: 'border-color 0.2s ease'
@@ -953,7 +993,7 @@ const Listing = () => {
             alignItems: 'flex-start',
             flex: '1 0 0',
             borderRadius: '0',
-            background: '#161619',
+            background: '#0E0E10',
             borderLeft: '1px solid #26272B',
             height: '100vh',
             position: 'sticky',
@@ -970,7 +1010,7 @@ const Listing = () => {
             gap: '16px',
            
             width: '100%',
-            background: '#161718',
+            background: '#0E0E10',
             borderBottom: '1px solid #26272B',
             padding : '16px',
             flexShrink: 0
@@ -1091,15 +1131,18 @@ const Listing = () => {
                   cursor: 'pointer'
                 }}
               >
-                <span style={{
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M6.51944 1.2145C7.49094 1.14992 8.50641 1.14979 9.47994 1.2145C12.5243 1.41687 14.9399 3.8744 15.1385 6.94761C15.1756 7.52255 15.1756 8.11721 15.1385 8.69215C14.9399 11.7653 12.5243 14.2229 9.47994 14.4253C8.50641 14.4899 7.49094 14.4898 6.51944 14.4253C6.14282 14.4002 5.73286 14.3111 5.37193 14.1625C5.21321 14.0971 5.10546 14.0529 5.02661 14.024C4.9724 14.0613 4.90039 14.1142 4.79554 14.1915C4.26725 14.5811 3.60029 14.8543 2.65379 14.8313L2.6233 14.8306C2.44071 14.8262 2.24608 14.8216 2.08735 14.7909C1.89617 14.7539 1.65965 14.6614 1.51161 14.409C1.35049 14.1343 1.41509 13.8565 1.47759 13.6816C1.53658 13.5165 1.63883 13.3228 1.74329 13.125L1.75761 13.0979C2.06849 12.5087 2.1551 12.0273 1.98888 11.7063C1.43399 10.8687 0.934819 9.83641 0.860873 8.69215C0.823719 8.11721 0.823719 7.52255 0.860873 6.94761C1.05949 3.8744 3.47501 1.41687 6.51944 1.2145ZM5.16634 6.33268C5.16634 6.60882 5.3902 6.83268 5.66634 6.83268H7.99967C8.27581 6.83268 8.49967 6.60882 8.49967 6.33268C8.49967 6.05654 8.27581 5.83268 7.99967 5.83268H5.66634C5.3902 5.83268 5.16634 6.05654 5.16634 6.33268ZM5.16634 9.66601C5.16634 9.94215 5.3902 10.166 5.66634 10.166H10.333C10.6091 10.166 10.833 9.94215 10.833 9.66601C10.833 9.38988 10.6091 9.16601 10.333 9.16601H5.66634C5.3902 9.16601 5.16634 9.38988 5.16634 9.66601Z" fill="white"/>
+</svg>
+                <span
+                className='font-bold'
+                style={{
                   color: '#FFF',
                   fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
                   fontSize: '13px',
-                  fontWeight: 500
-                }}>Full Profile</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M5.25 10.5L8.75 7L5.25 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                  
+                }}>Message</span>
+               
               </button>
             </div>
 
@@ -1124,7 +1167,23 @@ const Listing = () => {
               {['Overview', 'Experience', 'Education', 'Skill'].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    setActiveTab(tab)
+                    // Scroll to the corresponding section
+                    const sectionMap: Record<string, React.RefObject<HTMLDivElement | null>> = {
+                      'Overview': overviewSectionRef,
+                      'Experience': experienceSectionRef,
+                      'Education': educationSectionRef,
+                      'Skill': skillSectionRef
+                    }
+                    const targetRef = sectionMap[tab]
+                    if (targetRef.current && scrollContainerRef.current) {
+                      const containerTop = scrollContainerRef.current.getBoundingClientRect().top
+                      const sectionTop = targetRef.current.getBoundingClientRect().top
+                      const scrollPosition = scrollContainerRef.current.scrollTop + (sectionTop - containerTop) - 20
+                      scrollContainerRef.current.scrollTo({ top: scrollPosition, behavior: 'smooth' })
+                    }
+                  }}
                   style={{
                     display: 'flex',
                     height: '36px',
@@ -1153,6 +1212,7 @@ const Listing = () => {
 
           {/* Scrollable Content Section */}
           <div 
+            ref={scrollContainerRef}
             className="hide-scrollbar"
             style={{
               display: 'flex',
@@ -1166,15 +1226,19 @@ const Listing = () => {
               msOverflowStyle: 'none'
             }}
           >
-          {/* Manage Profile Section */}
-          <div style={{ 
+          {/* Manage Profile Section - Overview */}
+          <div ref={overviewSectionRef}></div>
+          <div 
+          className='border-[0.5px] border-[#1A1A1E]'
+          style={{ 
             display: 'flex', 
             flexDirection: 'column', 
             gap: '12px', 
             width: '100%',
             padding: '16px',
-            background: '#1A1A1E',
-            borderRadius: '12px'
+            background: '#0E0E10',
+            borderRadius: '12px',
+           
           }}>
             <p style={{
               color: '#70707B',
@@ -1183,29 +1247,42 @@ const Listing = () => {
               fontWeight: 500,
               margin: 0
             }}>Manage profile</p>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '6px', position: 'relative' }}>
               <button 
-                onClick={() => selectedCandidate && handleToggleShortlist(selectedCandidate.id)}
+                onClick={() => {
+                  if (selectedCandidate && shortlistedProfiles.has(selectedCandidate.id)) {
+                    // If already shortlisted, toggle dropdown
+                    setShowShortlistDropdown(!showShortlistDropdown)
+                  } else {
+                    // If not shortlisted, add to shortlist
+                    selectedCandidate && handleToggleShortlist(selectedCandidate.id)
+                  }
+                }}
                 disabled={shortlistLoading === selectedCandidate?.id}
                 style={{
                   display: 'flex',
                   padding: '8px 12px',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                   borderRadius: '8px',
                   background: '#875BF7',
                   border: 'none',
                   cursor: shortlistLoading === selectedCandidate?.id ? 'wait' : 'pointer',
                   opacity: shortlistLoading === selectedCandidate?.id ? 0.7 : 1,
-                  flex: 1
+                  flex: (selectedCandidate && shortlistedProfiles.has(selectedCandidate.id)) ? 1 : 1
                 }}>
                 <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Shortlist</span>
                 {selectedCandidate && shortlistedProfiles.has(selectedCandidate.id) ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 13.9993L5.33333 10.666" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M2 13.9993L5.33333 10.666" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="7" viewBox="0 0 12 7" fill="none">
+                      <path d="M10.75 0.750041C10.75 0.750041 7.06758 5.75 5.75 5.75C4.43233 5.75 0.75 0.75 0.75 0.75" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </>
                 ) : (
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M2 13.9993L5.33333 10.666" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1213,39 +1290,110 @@ const Listing = () => {
                   </svg>
                 )}
               </button>
-              <button style={{
-                display: 'flex',
-                padding: '8px 12px',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '8px',
-                borderRadius: '8px',
-                background: '#26272B',
-                border: '0.5px solid #3F3F46',
-                cursor: 'pointer',
-                flex: 1
-              }}>
-                <div className='flex  justify-between'>
-      <div className='flex gap-2'>
-            <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Bookmark</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-  <path d="M2.66699 11.9879V6.47234C2.66699 4.05009 2.66699 2.83897 3.44804 2.08648C4.22909 1.33398 5.48617 1.33398 8.00033 1.33398C10.5145 1.33398 11.7716 1.33398 12.5526 2.08648C13.3337 2.83897 13.3337 4.05009 13.3337 6.47234V11.9879C13.3337 13.5251 13.3337 14.2937 12.8185 14.5689C11.8207 15.1016 9.94913 13.3241 9.06033 12.7889C8.54486 12.4785 8.28713 12.3233 8.00033 12.3233C7.71353 12.3233 7.45579 12.4785 6.94033 12.7889C6.05153 13.3241 4.17997 15.1016 3.18223 14.5689C2.66699 14.2937 2.66699 13.5251 2.66699 11.9879Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M2.66699 4.66602H13.3337" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-      </div>
 
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-  <path d="M15 7.50004C15 7.50004 11.3176 12.5 10 12.5C8.68233 12.5 5 7.5 5 7.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+              {/* Dropdown for Shortlisted profiles */}
+              {showShortlistDropdown && selectedCandidate && shortlistedProfiles.has(selectedCandidate.id) && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: 0,
+                    right: 0,
+                    display: 'flex',
+                    padding: '8px',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: '4px',
+                    borderRadius: '12px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E',
+                    boxShadow: '0 4px 28.8px 0 rgba(0, 0, 0, 0.13)',
+                    zIndex: 1001
+                  }}
+                >
+                  <button
+                    style={{
+                      display: 'flex',
+                      padding: '8px 12px',
+                      alignItems: 'center',
+                      alignSelf: 'stretch',
+                      borderRadius: '8px',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#FFF',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                      textAlign: 'left',
+                      width: '100%'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#26272B'}
+                    onClick={() => setShowShortlistDropdown(false)}
+                  >
+                    Shortlisted
+                  </button>
+                  <button
+                    style={{
+                      display: 'flex',
+                      padding: '8px 12px',
+                      alignItems: 'center',
+                      alignSelf: 'stretch',
+                      borderRadius: '8px',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#FFF',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                      textAlign: 'left',
+                      width: '100%'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    onClick={async () => {
+                      // Remove from shortlist
+                      selectedCandidate && handleToggleShortlist(selectedCandidate.id)
+                      setShowShortlistDropdown(false)
+                    }}
+                  >
+                    Not Interested
+                  </button>
                 </div>
-      
-              </button>
+              )}
+
+              {/* Not Interested button - only show when not shortlisted */}
+              {(!selectedCandidate || !shortlistedProfiles.has(selectedCandidate.id)) && (
+                <button style={{
+                  display: 'flex',
+                  padding: '8px 12px',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '6px',
+                  borderRadius: '8px',
+                  background: '#26272B',
+                  border: '0.5px solid #3F3F46',
+                  cursor: 'pointer',
+                  flex: 1
+                }}>
+                  <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Not Interested</span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* Work Experience Section */}
           <div 
-          className='p-[16px] bg-[#131316] border-[0.5px] border-[#26272B] rounded-[16px]'
+          ref={experienceSectionRef}
+          className='p-[16px] bg-[#0E0E10] border-[0.5px] border-[#1A1A1E] rounded-[16px]'
           style={{ 
             display: 'flex', 
             flexDirection: 'column', 
@@ -1426,7 +1574,8 @@ const Listing = () => {
 
           {/* Education Section */}
           <div 
-          className='p-[16px] bg-[#131316] border-[0.5px] border-[#26272B] rounded-[16px]'
+          ref={educationSectionRef}
+          className='p-[16px] bg-[#0E0E10] border-[0.5px] border-[#1A1A1E] rounded-[16px]'
           style={{ 
             display: 'flex', 
             flexDirection: 'column', 
@@ -1476,7 +1625,8 @@ const Listing = () => {
 
           {/* Skills Section */}
           <div 
-          className='p-[16px] bg-[#131316] border-[0.5px] border-[#26272B] rounded-[16px]'
+          ref={skillSectionRef}
+           className='p-[16px] bg-[#0E0E10] border-[0.5px] border-[#1A1A1E] rounded-[16px]'
           style={{ 
             display: 'flex', 
             flexDirection: 'column', 
@@ -1563,7 +1713,7 @@ const Listing = () => {
 
           {/* Languages Section */}
           <div 
-          className='p-[16px] bg-[#131316] border-[0.5px] border-[#26272B] rounded-[16px]'
+           className='p-[16px] bg-[#0E0E10] border-[0.5px] border-[#1A1A1E] rounded-[16px]'
           style={{ 
             display: 'flex', 
             flexDirection: 'column', 

@@ -46,6 +46,10 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
   const [minExperience, setMinExperience] = useState(initialFilters?.minExperience || '')
   const [maxExperience, setMaxExperience] = useState(initialFilters?.maxExperience || '')
   const [skills, setSkills] = useState(initialFilters?.skills || '')
+  const [skillTags, setSkillTags] = useState<string[]>([])
+  const [showPreferredLocationDropdown, setShowPreferredLocationDropdown] = useState(false)
+  const [showPostLocationDropdown, setShowPostLocationDropdown] = useState(false)
+  const [showSkillDropdown, setShowSkillDropdown] = useState(false)
 
   const handleApply = () => {
     const filters: FilterData = {
@@ -73,8 +77,108 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
     setMinExperience('')
     setMaxExperience('')
     setSkills('')
+    setSkillTags([])
     setPreferredLocation('')
     setPostLocation('')
+  }
+
+  // Location suggestions
+  const locationSuggestions: { [key: string]: string[] } = {
+    'chennai': ['Chennai, Tamil Nadu, India'],
+    'chen': ['Chennai, Tamil Nadu, India'],
+    'bangalore': ['Bangalore, Karnataka, India'],
+    'bang': ['Bangalore, Karnataka, India'],
+    'mumbai': ['Mumbai, Maharashtra, India'],
+    'mum': ['Mumbai, Maharashtra, India'],
+    'delhi': ['Delhi, India'],
+    'del': ['Delhi, India'],
+    'hyderabad': ['Hyderabad, Telangana, India'],
+    'hyd': ['Hyderabad, Telangana, India'],
+    'pune': ['Pune, Maharashtra, India'],
+    'pun': ['Pune, Maharashtra, India']
+  }
+
+  // Skill suggestions
+  const skillSuggestions: { [key: string]: string[] } = {
+    'ux': ['UX Design', 'UX/UI', 'UX Research'],
+    'ui': ['UI Design', 'UX/UI'],
+    'react': ['React', 'React Native', 'React.js'],
+    'java': ['Java', 'JavaScript', 'Java Spring'],
+    'python': ['Python', 'Python Django', 'Python Flask'],
+    'node': ['Node.js', 'Node.js Express'],
+    'design': ['UX Design', 'UI Design', 'Graphic Design']
+  }
+
+  const getLocationSuggestions = (input: string) => {
+    if (!input) return []
+    const lowerInput = input.toLowerCase()
+    return Object.entries(locationSuggestions)
+      .filter(([key]) => key.includes(lowerInput))
+      .flatMap(([_, values]) => values)
+      .filter((value, index, self) => self.indexOf(value) === index)
+  }
+
+  const getSkillSuggestions = (input: string) => {
+    if (!input) return []
+    const lowerInput = input.toLowerCase()
+    return Object.entries(skillSuggestions)
+      .filter(([key]) => key.includes(lowerInput))
+      .flatMap(([_, values]) => values)
+      .filter((value, index, self) => self.indexOf(value) === index)
+  }
+
+  const addPreferredLocationTag = (location: string) => {
+    if (!preferredLocationTags.includes(location)) {
+      setPreferredLocationTags([...preferredLocationTags, location])
+    }
+    setPreferredLocation('')
+    setShowPreferredLocationDropdown(false)
+  }
+
+  const addPostLocationTag = (location: string) => {
+    if (!postLocationTags.includes(location)) {
+      setPostLocationTags([...postLocationTags, location])
+    }
+    setPostLocation('')
+    setShowPostLocationDropdown(false)
+  }
+
+  const addSkillTag = (skill: string) => {
+    if (!skillTags.includes(skill)) {
+      setSkillTags([...skillTags, skill])
+    }
+    setSkills('')
+    setShowSkillDropdown(false)
+  }
+
+  // Convert number to words for salary display
+  const convertSalaryToWords = (value: string): string => {
+    if (!value || isNaN(Number(value))) return ''
+    const num = Number(value)
+    
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
+    
+    if (num === 0) return ''
+    if (num < 10) return `${ones[num]} Lakhs Per Annum`
+    if (num >= 10 && num < 20) return `${teens[num - 10]} Lakhs Per Annum`
+    if (num >= 20 && num < 100) {
+      const ten = Math.floor(num / 10)
+      const one = num % 10
+      return one === 0 ? `${tens[ten]} Lakhs Per Annum` : `${tens[ten]} ${ones[one]} Lakhs Per Annum`
+    }
+    if (num >= 100) {
+      const hundred = Math.floor(num / 100)
+      const remainder = num % 100
+      if (remainder === 0) return `${ones[hundred]} Hundred Lakhs Per Annum`
+      if (remainder < 10) return `${ones[hundred]} Hundred ${ones[remainder]} Lakhs Per Annum`
+      if (remainder >= 10 && remainder < 20) return `${ones[hundred]} Hundred ${teens[remainder - 10]} Lakhs Per Annum`
+      const ten = Math.floor(remainder / 10)
+      const one = remainder % 10
+      return one === 0 ? `${ones[hundred]} Hundred ${tens[ten]} Lakhs Per Annum` : `${ones[hundred]} Hundred ${tens[ten]} ${ones[one]} Lakhs Per Annum`
+    }
+    return ''
   }
 
   if (!isOpen) return null
@@ -333,7 +437,11 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
                   <div className="relative mb-2">
                     <Input
                       value={preferredLocation}
-                      onChange={(e) => setPreferredLocation(e.target.value)}
+                      onChange={(e) => {
+                        setPreferredLocation(e.target.value)
+                        setShowPreferredLocationDropdown(true)
+                      }}
+                      onFocus={() => setShowPreferredLocationDropdown(true)}
                       placeholder="eg. Chennai, Tamil Nadu, India"
                       className="w-full rounded-[12px] border-[0.5px]"
                       style={{
@@ -349,15 +457,88 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
                       xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
                       <path d="M9.16699 2.16675C13.033 2.16675 16.167 5.30076 16.167 9.16675C16.167 10.82 15.5947 12.3383 14.6367 13.5359L14.3564 13.8855L14.6738 14.2019L17.7363 17.2644C17.8663 17.3946 17.8664 17.606 17.7363 17.7361C17.6062 17.8662 17.3948 17.8661 17.2646 17.7361L14.2021 14.6736L13.8857 14.3562L13.5361 14.6365C12.3385 15.5944 10.8202 16.1667 9.16699 16.1667C5.301 16.1667 2.16699 13.0328 2.16699 9.16675C2.16699 5.30076 5.301 2.16675 9.16699 2.16675ZM9.16699 2.83374C5.66919 2.83374 2.83398 5.66895 2.83398 9.16675C2.83398 12.6646 5.66919 15.4998 9.16699 15.4998C12.6648 15.4998 15.5 12.6646 15.5 9.16675C15.5 5.66895 12.6648 2.83374 9.16699 2.83374Z" fill="black" stroke="#70707B"/>
                     </svg>
+                    {showPreferredLocationDropdown && getLocationSuggestions(preferredLocation).length > 0 && (
+                      <div 
+                        style={{
+                          display: 'flex',
+                          padding: '0',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          flex: '1 0 0',
+                          borderRadius: '12px',
+                          border: '0.5px solid #26272B',
+                          background: '#1A1A1E',
+                          boxShadow: '0 4px 28.8px 0 rgba(0, 0, 0, 0.13)',
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          marginTop: '4px',
+                          zIndex: 50
+                        }}
+                      >
+                        {getLocationSuggestions(preferredLocation).map((suggestion, index) => (
+                          <div
+                            key={index}
+                            onClick={() => addPreferredLocationTag(suggestion)}
+                            style={{
+                              display: 'flex',
+                              padding: '1px 8px',
+                              alignItems: 'center',
+                              alignSelf: 'stretch',
+                              cursor: 'pointer',
+                              color: '#FFF',
+                              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                              fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                              fontSize: '14px',
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              lineHeight: '20px',
+                              minHeight: '32px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          >
+                            {suggestion}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {preferredLocationTags.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {preferredLocationTags.map((tag, index) => (
-                        <div key={index} className="flex items-center rounded-[6px] px-2 py-1 bg-[#231241]">
-                          <span className="text-[14px] text-[#c3b4fd]">{tag}</span>
+                        <div 
+                          key={index} 
+                          style={{
+                            display: 'flex',
+                            height: '24px',
+                            padding: '2px 4px 2px 8px',
+                            alignItems: 'center',
+                            gap: '2px',
+                            borderRadius: '6px',
+                            border: '0.5px solid #491C95',
+                            background: 'rgba(46, 18, 94, 0.60)'
+                          }}
+                        >
+                          <span 
+                            style={{
+                              overflow: 'hidden',
+                              color: '#C3B4FD',
+                              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                              textOverflow: 'ellipsis',
+                              fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                              fontSize: '14px',
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}
+                          >
+                            {tag}
+                          </span>
                           <button onClick={() => setPreferredLocationTags(preferredLocationTags.filter((_, i) => i !== index))}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                              <path d="M9 3L3.00041 8.9996M8.9996 9L3 3.00043" stroke="#C3B4FD" strokeWidth="1.5"/>
+                              <path d="M9 3L3.00041 8.9996M8.9996 9L3 3.00043" stroke="#C3B4FD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           </button>
                         </div>
@@ -374,24 +555,14 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
                       </button>
                     )}
                   </div>
-                  {postLocationTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {postLocationTags.map((tag, index) => (
-                        <div key={index} className="flex items-center rounded-full px-2 py-1 bg-[#875BF7]">
-                          <span className="text-[14px] text-[#C3B4FD]">{tag}</span>
-                          <button onClick={() => setPostLocationTags(postLocationTags.filter((_, i) => i !== index))}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                              <path d="M9 3L3.00041 8.9996M8.9996 9L3 3.00043" stroke="#C3B4FD" strokeWidth="1.5"/>
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="relative">
+                  <div className="relative mb-2">
                     <Input
                       value={postLocation}
-                      onChange={(e) => setPostLocation(e.target.value)}
+                      onChange={(e) => {
+                        setPostLocation(e.target.value)
+                        setShowPostLocationDropdown(true)
+                      }}
+                      onFocus={() => setShowPostLocationDropdown(true)}
                       placeholder="eg. Chennai, Tamil Nadu, India"
                       className="w-full rounded-[12px]"
                       style={{
@@ -405,7 +576,94 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
                     <svg className='absolute right-3 top-1/2 -translate-y-1/2' xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
                       <path d="M9.16699 2.16675C13.033 2.16675 16.167 5.30076 16.167 9.16675C16.167 10.82 15.5947 12.3383 14.6367 13.5359L14.3564 13.8855L14.6738 14.2019L17.7363 17.2644C17.8663 17.3946 17.8664 17.606 17.7363 17.7361C17.6062 17.8662 17.3948 17.8661 17.2646 17.7361L14.2021 14.6736L13.8857 14.3562L13.5361 14.6365C12.3385 15.5944 10.8202 16.1667 9.16699 16.1667C5.301 16.1667 2.16699 13.0328 2.16699 9.16675C2.16699 5.30076 5.301 2.16675 9.16699 2.16675ZM9.16699 2.83374C5.66919 2.83374 2.83398 5.66895 2.83398 9.16675C2.83398 12.6646 5.66919 15.4998 9.16699 15.4998C12.6648 15.4998 15.5 12.6646 15.5 9.16675C15.5 5.66895 12.6648 2.83374 9.16699 2.83374Z" fill="black" stroke="#70707B"/>
                     </svg>
+                    {showPostLocationDropdown && getLocationSuggestions(postLocation).length > 0 && (
+                      <div 
+                        style={{
+                          display: 'flex',
+                          padding: '0',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          flex: '1 0 0',
+                          borderRadius: '12px',
+                          border: '0.5px solid #26272B',
+                          background: '#1A1A1E',
+                          boxShadow: '0 4px 28.8px 0 rgba(0, 0, 0, 0.13)',
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          marginTop: '4px',
+                          zIndex: 50
+                        }}
+                      >
+                        {getLocationSuggestions(postLocation).map((suggestion, index) => (
+                          <div
+                            key={index}
+                            onClick={() => addPostLocationTag(suggestion)}
+                            style={{
+                              display: 'flex',
+                              padding: '1px 8px',
+                              alignItems: 'center',
+                              alignSelf: 'stretch',
+                              cursor: 'pointer',
+                              color: '#FFF',
+                              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                              fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                              fontSize: '14px',
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              lineHeight: '20px',
+                              minHeight: '32px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          >
+                            {suggestion}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
+                  {postLocationTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {postLocationTags.map((tag, index) => (
+                        <div 
+                          key={index} 
+                          style={{
+                            display: 'flex',
+                            height: '24px',
+                            padding: '2px 4px 2px 8px',
+                            alignItems: 'center',
+                            gap: '2px',
+                            borderRadius: '6px',
+                            border: '0.5px solid #491C95',
+                            background: 'rgba(46, 18, 94, 0.60)'
+                          }}
+                        >
+                          <span 
+                            style={{
+                              overflow: 'hidden',
+                              color: '#C3B4FD',
+                              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                              textOverflow: 'ellipsis',
+                              fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                              fontSize: '14px',
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}
+                          >
+                            {tag}
+                          </span>
+                          <button onClick={() => setPostLocationTags(postLocationTags.filter((_, i) => i !== index))}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                              <path d="M9 3L3.00041 8.9996M8.9996 9L3 3.00043" stroke="#C3B4FD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="w-1/2 pr-2">
@@ -444,7 +702,9 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
 
             {/* Salary Section */}
             <div ref={salaryRef} className="bg-[#131316] p-[20px] rounded-[16px]">
-              <h3 className="text-[16px] font-medium text-white mb-4">Salary</h3>
+              <h3
+              style={{font:"--var(font-body)"}}
+              className="text-[16px] font-medium font-body text-white mb-4">Salary</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] text-[#70707B] mb-2">Min salary (LPA)</label>
@@ -458,6 +718,22 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
                       style={{ background: '#1A1A1E', border: '0.5px solid #26272B' }}
                     />
                   </div>
+                  {minSalary && (
+                    <div 
+                      style={{
+                        color: '#CAF7DA',
+                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                        fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                        fontSize: '14px',
+                        fontStyle: 'normal',
+                        fontWeight: 400,
+                        lineHeight: '20px',
+                        marginTop: '4px'
+                      }}
+                    >
+                      {convertSalaryToWords(minSalary)}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[12px] text-[#70707B] mb-2">Max salary (LPA)</label>
@@ -471,13 +747,31 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
                       style={{ background: '#1A1A1E', border: '0.5px solid #26272B' }}
                     />
                   </div>
+                  {maxSalary && (
+                    <div 
+                      style={{
+                        color: '#CAF7DA',
+                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                        fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                        fontSize: '14px',
+                        fontStyle: 'normal',
+                        fontWeight: 400,
+                        lineHeight: '20px',
+                        marginTop: '4px'
+                      }}
+                    >
+                      {convertSalaryToWords(maxSalary)}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Experience Section */}
             <div ref={experienceRef} className="bg-[#131316] p-[20px] rounded-[16px]">
-              <h3 className="text-[16px] font-medium text-white mb-4">Experience</h3>
+              <h3 
+               style={{font:"--var(font-body)"}}
+              className="text-[16px] font-medium text-white mb-4">Experience</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] text-[#70707B] mb-2">Min experience (Years)</label>
@@ -503,22 +797,122 @@ export default function FilterModal({ isOpen, onClose, onApply, initialFilters }
             {/* Skill Section */}
             <div ref={skillRef} className="bg-[#131316] p-[20px] rounded-[16px]">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[16px] font-medium text-white">Skill</h3>
-                <button className="text-[12px] text-[#875BF7]">Clear all</button>
+                <h3
+                 style={{font:"--var(font-body)"}}
+                className="text-[16px] font-medium text-white">Skill</h3>
+                {skillTags.length > 0 && (
+                  <button onClick={() => setSkillTags([])} className="text-[12px] text-[#875BF7]">
+                    Clear all
+                  </button>
+                )}
               </div>
               <label className="block text-[12px] text-[#70707B] mb-2">Add skills</label>
-              <Input
-                value={skills}
-                onChange={(e) => setSkills(e.target.value)}
-                placeholder="Search for skills"
-                className="w-1/2"
-                style={{ background: '#1A1A1E', border: '0.5px solid #26272B' }}
-              />
+              <div className="relative w-1/2 mb-2">
+                <Input
+                  value={skills}
+                  onChange={(e) => {
+                    setSkills(e.target.value)
+                    setShowSkillDropdown(true)
+                  }}
+                  onFocus={() => setShowSkillDropdown(true)}
+                  placeholder="Search for skills"
+                  style={{ background: '#1A1A1E', border: '0.5px solid #26272B' }}
+                />
+                {showSkillDropdown && getSkillSuggestions(skills).length > 0 && (
+                  <div 
+                    style={{
+                      display: 'flex',
+                      padding: '0',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      flex: '1 0 0',
+                      borderRadius: '12px',
+                      border: '0.5px solid #26272B',
+                      background: '#1A1A1E',
+                      boxShadow: '0 4px 28.8px 0 rgba(0, 0, 0, 0.13)',
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      marginTop: '4px',
+                      zIndex: 50
+                    }}
+                  >
+                    {getSkillSuggestions(skills).map((suggestion, index) => (
+                      <div
+                        key={index}
+                        onClick={() => addSkillTag(suggestion)}
+                        style={{
+                          display: 'flex',
+                          padding: '1px 8px',
+                          alignItems: 'center',
+                          alignSelf: 'stretch',
+                          cursor: 'pointer',
+                          color: '#FFF',
+                          fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                          fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                          fontSize: '14px',
+                          fontStyle: 'normal',
+                          fontWeight: 500,
+                          lineHeight: '20px',
+                          minHeight: '32px'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {skillTags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {skillTags.map((tag, index) => (
+                    <div 
+                      key={index} 
+                      style={{
+                        display: 'flex',
+                        height: '24px',
+                        padding: '2px 4px 2px 8px',
+                        alignItems: 'center',
+                        gap: '2px',
+                        borderRadius: '6px',
+                        border: '0.5px solid #491C95',
+                        background: 'rgba(46, 18, 94, 0.60)'
+                      }}
+                    >
+                      <span 
+                        style={{
+                          overflow: 'hidden',
+                          color: '#C3B4FD',
+                          fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                          textOverflow: 'ellipsis',
+                          fontFamily: 'var(--Font-family-font-family-text, "Inter Display")',
+                          fontSize: '14px',
+                          fontStyle: 'normal',
+                          fontWeight: 500,
+                          lineHeight: '20px'
+                        }}
+                      >
+                        {tag}
+                      </span>
+                      <button onClick={() => setSkillTags(skillTags.filter((_, i) => i !== index))}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M9 3L3.00041 8.9996M8.9996 9L3 3.00043" stroke="#C3B4FD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Industry Section */}
             <div ref={industryRef} className="bg-[#131316] p-[20px] rounded-[16px]">
-              <h3 className="text-[16px] font-medium text-white mb-4">Industry</h3>
+              <h3
+               style={{font:"--var(font-body)"}}
+              className="text-[16px] font-medium text-white mb-4">Industry</h3>
               <div className="relative">
                 <div
                   onClick={() => setShowIndustryDropdown(!showIndustryDropdown)}
