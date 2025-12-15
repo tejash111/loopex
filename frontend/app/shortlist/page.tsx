@@ -5,7 +5,16 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/dashboard/Sidebar'
 import ProjectModal from '@/components/dashboard/ProjectModal'
 import EditQueryModal from '@/components/dashboard/EditQueryModal'
+import { Input } from '@/components/ui/input'
 import { ChevronDown } from 'lucide-react'
+
+interface ShortlistFilterData {
+  status: string[]
+  location: string[]
+  company: string[]
+  jobTitle: string[]
+  profiles: string[]
+}
 
 const socialIcons = [
   {
@@ -124,19 +133,27 @@ export default function ShortlistPage() {
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<{[key: string]: boolean}>({})
   const [profileStatus, setProfileStatus] = useState<{[key: string]: string}>({})
   const [showSortDropdown, setShowSortDropdown] = useState(false)
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const [selectedSort, setSelectedSort] = useState<string>('Sort by Date')
-  const [selectedFilters, setSelectedFilters] = useState<{[key: string]: boolean}>({
-    'Not Contacted': false,
-    'Email Sent': false,
-    'Interviewing': false,
-    'Hired': false,
-    'Rejected': false
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [activeFilterCategory, setActiveFilterCategory] = useState<string | null>(null)
+  const [appliedFilters, setAppliedFilters] = useState<ShortlistFilterData>({
+    status: [],
+    location: [],
+    company: [],
+    jobTitle: [],
+    profiles: []
   })
+  
+  // Search inputs for each filter category
+  const [locationSearchInput, setLocationSearchInput] = useState('')
+  const [companySearchInput, setCompanySearchInput] = useState('')
+  const [jobTitleSearchInput, setJobTitleSearchInput] = useState('')
+  const [statusSearchInput, setStatusSearchInput] = useState('')
+  const [profileSearchInput, setProfileSearchInput] = useState('')
 
   const sortButtonRef = useRef<HTMLButtonElement>(null)
-  const filterButtonRef = useRef<HTMLButtonElement>(null)
   const sortDropdownRef = useRef<HTMLDivElement>(null)
+  const filterButtonRef = useRef<HTMLButtonElement>(null)
   const filterDropdownRef = useRef<HTMLDivElement>(null)
 
   const [selectedProfile, setSelectedProfile] = useState<ShortlistedProfile | null>(null)
@@ -200,9 +217,11 @@ export default function ShortlistPage() {
           setShowSortDropdown(false)
         }
       }
+      
       if (filterButtonRef.current && filterDropdownRef.current) {
         if (!filterButtonRef.current.contains(event.target as Node) && !filterDropdownRef.current.contains(event.target as Node)) {
           setShowFilterDropdown(false)
+          setActiveFilterCategory(null)
         }
       }
       
@@ -711,39 +730,45 @@ export default function ShortlistPage() {
                   )}
                 </button>
 
-                <button
-                  ref={filterButtonRef}
-                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                  style={{
-                    position: 'relative',
-                    display: 'flex',
-                    padding: '10px 14px',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '4px',
-                    borderRadius: '12px',
-                    border: '0.5px solid #26272B',
-                    background: '#1A1A1E',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span style={{
-                    color: '#A48AFB',
-                    fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                    fontFamily: '"Inter Display", sans-serif',
-                    fontSize: '14px',
-                    fontStyle: 'normal',
-                    fontWeight: 600,
-                    lineHeight: '20px'
-                  }}>Filter</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M1.33301 4.66667C1.33301 4.29848 1.63149 4 1.99967 4H3.99967C4.36786 4 4.66634 4.29848 4.66634 4.66667C4.66634 5.03485 4.36786 5.33333 3.99967 5.33333H1.99967C1.63149 5.33333 1.33301 5.03485 1.33301 4.66667Z" fill="#A48AFB"/>
-                    <path fillRule="evenodd" clipRule="evenodd" d="M1.33301 11.3346C1.33301 10.9664 1.63149 10.668 1.99967 10.668H5.99967C6.36786 10.668 6.66634 10.9664 6.66634 11.3346C6.66634 11.7028 6.36786 12.0013 5.99967 12.0013H1.99967C1.63149 12.0013 1.33301 11.7028 1.33301 11.3346Z" fill="#A48AFB"/>
-                    <path fillRule="evenodd" clipRule="evenodd" d="M11.333 11.3346C11.333 10.9664 11.6315 10.668 11.9997 10.668H13.9997C14.3679 10.668 14.6663 10.9664 14.6663 11.3346C14.6663 11.7028 14.3679 12.0013 13.9997 12.0013H11.9997C11.6315 12.0013 11.333 11.7028 11.333 11.3346Z" fill="#A48AFB"/>
-                    <path fillRule="evenodd" clipRule="evenodd" d="M9.33301 4.66667C9.33301 4.29848 9.63147 4 9.99967 4H13.9997C14.3679 4 14.6663 4.29848 14.6663 4.66667C14.6663 5.03486 14.3679 5.33333 13.9997 5.33333H9.99967C9.63147 5.33333 9.33301 5.03485 9.33301 4.66667Z" fill="#A48AFB"/>
-                    <path fillRule="evenodd" clipRule="evenodd" d="M5.98317 2.16797H6.01683C6.31314 2.16796 6.5605 2.16796 6.7636 2.18182C6.975 2.19624 7.17467 2.22734 7.36827 2.30752C7.81747 2.4936 8.1744 2.8505 8.36047 3.29972C8.44067 3.49331 8.47173 3.693 8.48613 3.9044C8.5 4.10747 8.5 4.35482 8.5 4.65113V4.68481C8.5 4.98112 8.5 5.22847 8.48613 5.43155C8.47173 5.64295 8.44067 5.84263 8.36047 6.03622C8.1744 6.48544 7.81747 6.84237 7.36827 7.02844C7.17467 7.10864 6.975 7.1397 6.7636 7.1541C6.5605 7.16797 6.31315 7.16797 6.01684 7.16797H5.98316C5.68685 7.16797 5.4395 7.16797 5.23643 7.1541C5.02503 7.1397 4.82534 7.10864 4.63175 7.02844C4.18253 6.84237 3.82563 6.48544 3.63955 6.03622C3.55937 5.84263 3.52827 5.64295 3.51385 5.43155C3.49999 5.22847 3.49999 4.98111 3.5 4.6848V4.65114C3.49999 4.35483 3.49999 4.10747 3.51385 3.9044C3.52827 3.693 3.55937 3.49331 3.63955 3.29972C3.82563 2.8505 4.18253 2.4936 4.63175 2.30752C4.82534 2.22734 5.02503 2.19624 5.23643 2.18182C5.4395 2.16796 5.68686 2.16796 5.98317 2.16797Z" fill="#A48AFB"/>
-                    <path fillRule="evenodd" clipRule="evenodd" d="M9.98313 8.83203H10.0169C10.3131 8.83203 10.5605 8.83203 10.7636 8.8459C10.975 8.8603 11.1747 8.89136 11.3683 8.97156C11.8175 9.15763 12.1744 9.51456 12.3605 9.96376C12.4407 10.1574 12.4717 10.357 12.4861 10.5684C12.5 10.7715 12.5 11.0189 12.5 11.3152V11.3489C12.5 11.6452 12.5 11.8926 12.4861 12.0956C12.4717 12.307 12.4407 12.5067 12.3605 12.7003C12.1744 13.1495 11.8175 13.5064 11.3683 13.6925C11.1747 13.7727 10.975 13.8038 10.7636 13.8182C10.5605 13.832 10.3131 13.832 10.0169 13.832H9.98313C9.68687 13.832 9.43947 13.832 9.2364 13.8182C9.025 13.8038 8.82533 13.7727 8.63173 13.6925C8.18253 13.5064 7.8256 13.1495 7.63953 12.7003C7.55933 12.5067 7.52827 12.307 7.51387 12.0956C7.5 11.8926 7.5 11.6452 7.5 11.3489V11.3152C7.5 11.0189 7.5 10.7715 7.51387 10.5684C7.52827 10.357 7.55933 10.1574 7.63953 9.96376C7.8256 9.51456 8.18253 9.15763 8.63173 8.97156C8.82533 8.89136 9.025 8.8603 9.2364 8.8459C9.43947 8.83203 9.68687 8.83203 9.98313 8.83203Z" fill="#A48AFB"/>
-                  </svg>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    ref={filterButtonRef}
+                    onClick={() => {
+                      setShowFilterDropdown(!showFilterDropdown)
+                      if (!showFilterDropdown) {
+                        setActiveFilterCategory(null)
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      padding: '10px 14px',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '4px',
+                      borderRadius: '12px',
+                      border: '0.5px solid #26272B',
+                      background: '#1A1A1E',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <span style={{
+                      color: '#A48AFB',
+                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                      fontFamily: '"Inter Display", sans-serif',
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 600,
+                      lineHeight: '20px'
+                    }}>Filter</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M1.33301 4.66667C1.33301 4.29848 1.63149 4 1.99967 4H3.99967C4.36786 4 4.66634 4.29848 4.66634 4.66667C4.66634 5.03485 4.36786 5.33333 3.99967 5.33333H1.99967C1.63149 5.33333 1.33301 5.03485 1.33301 4.66667Z" fill="#A48AFB"/>
+                      <path fillRule="evenodd" clipRule="evenodd" d="M1.33301 11.3346C1.33301 10.9664 1.63149 10.668 1.99967 10.668H5.99967C6.36786 10.668 6.66634 10.9664 6.66634 11.3346C6.66634 11.7028 6.36786 12.0013 5.99967 12.0013H1.99967C1.63149 12.0013 1.33301 11.7028 1.33301 11.3346Z" fill="#A48AFB"/>
+                      <path fillRule="evenodd" clipRule="evenodd" d="M11.333 11.3346C11.333 10.9664 11.6315 10.668 11.9997 10.668H13.9997C14.3679 10.668 14.6663 10.9664 14.6663 11.3346C14.6663 11.7028 14.3679 12.0013 13.9997 12.0013H11.9997C11.6315 12.0013 11.333 11.7028 11.333 11.3346Z" fill="#A48AFB"/>
+                      <path fillRule="evenodd" clipRule="evenodd" d="M9.33301 4.66667C9.33301 4.29848 9.63147 4 9.99967 4H13.9997C14.3679 4 14.6663 4.29848 14.6663 4.66667C14.6663 5.03486 14.3679 5.33333 13.9997 5.33333H9.99967C9.63147 5.33333 9.33301 5.03485 9.33301 4.66667Z" fill="#A48AFB"/>
+                      <path fillRule="evenodd" clipRule="evenodd" d="M5.98317 2.16797H6.01683C6.31314 2.16796 6.5605 2.16796 6.7636 2.18182C6.975 2.19624 7.17467 2.22734 7.36827 2.30752C7.81747 2.4936 8.1744 2.8505 8.36047 3.29972C8.44067 3.49331 8.47173 3.693 8.48613 3.9044C8.5 4.10747 8.5 4.35482 8.5 4.65113V4.68481C8.5 4.98112 8.5 5.22847 8.48613 5.43155C8.47173 5.64295 8.44067 5.84263 8.36047 6.03622C8.1744 6.48544 7.81747 6.84237 7.36827 7.02844C7.17467 7.10864 6.975 7.1397 6.7636 7.1541C6.5605 7.16797 6.31315 7.16797 6.01684 7.16797H5.98316C5.68685 7.16797 5.4395 7.16797 5.23643 7.1541C5.02503 7.1397 4.82534 7.10864 4.63175 7.02844C4.18253 6.84237 3.82563 6.48544 3.63955 6.03622C3.55937 5.84263 3.52827 5.64295 3.51385 5.43155C3.49999 5.22847 3.49999 4.98111 3.5 4.6848V4.65114C3.49999 4.35483 3.49999 4.10747 3.51385 3.9044C3.52827 3.693 3.55937 3.49331 3.63955 3.29972C3.82563 2.8505 4.18253 2.4936 4.63175 2.30752C4.82534 2.22734 5.02503 2.19624 5.23643 2.18182C5.4395 2.16796 5.68686 2.16796 5.98317 2.16797Z" fill="#A48AFB"/>
+                      <path fillRule="evenodd" clipRule="evenodd" d="M9.98313 8.83203H10.0169C10.3131 8.83203 10.5605 8.83203 10.7636 8.8459C10.975 8.8603 11.1747 8.89136 11.3683 8.97156C11.8175 9.15763 12.1744 9.51456 12.3605 9.96376C12.4407 10.1574 12.4717 10.357 12.4861 10.5684C12.5 10.7715 12.5 11.0189 12.5 11.3152V11.3489C12.5 11.6452 12.5 11.8926 12.4861 12.0956C12.4717 12.307 12.4407 12.5067 12.3605 12.7003C12.1744 13.1495 11.8175 13.5064 11.3683 13.6925C11.1747 13.7727 10.975 13.8038 10.7636 13.8182C10.5605 13.832 10.3131 13.832 10.0169 13.832H9.98313C9.68687 13.832 9.43947 13.832 9.2364 13.8182C9.025 13.8038 8.82533 13.7727 8.63173 13.6925C8.18253 13.5064 7.8256 13.1495 7.63953 12.7003C7.55933 12.5067 7.52827 12.307 7.51387 12.0956C7.5 11.8926 7.5 11.6452 7.5 11.3489V11.3152C7.5 11.0189 7.5 10.7715 7.51387 10.5684C7.52827 10.357 7.55933 10.1574 7.63953 9.96376C7.8256 9.51456 8.18253 9.15763 8.63173 8.97156C8.82533 8.89136 9.025 8.8603 9.2364 8.8459C9.43947 8.83203 9.68687 8.83203 9.98313 8.83203Z" fill="#A48AFB"/>
+                    </svg>
+                  </button>
 
                   {/* Filter Dropdown */}
                   {showFilterDropdown && (
@@ -751,54 +776,677 @@ export default function ShortlistPage() {
                       ref={filterDropdownRef}
                       style={{
                         position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        marginTop: '4px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px',
-                        padding: '12px',
-                        borderRadius: '8px',
+                        top: 'calc(100% + 8px)',
+                        right: 0,
+                        width: '304px',
+                        borderRadius: '16px',
                         border: '0.5px solid #26272B',
                         background: '#1A1A1E',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        boxShadow: '0px 4px 28.8px 0px rgba(0, 0, 0, 0.13)',
                         zIndex: 1000,
-                        minWidth: '160px'
+                        overflow: 'hidden'
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {Object.keys(selectedFilters).map((filter) => (
-                        <label
-                          key={filter}
-                          style={{
+                      {!activeFilterCategory ? (
+                        // Main filter menu
+                        <div style={{ padding: '12px' }}>
+                          {[
+                            { key: 'status', label: 'Status', count: appliedFilters.status.length },
+                            { key: 'location', label: 'Location', count: appliedFilters.location.length },
+                            { key: 'company', label: 'Company', count: appliedFilters.company.length },
+                            { key: 'jobTitle', label: 'Job title', count: appliedFilters.jobTitle.length },
+                            { key: 'profiles', label: 'Profiles', count: appliedFilters.profiles.length }
+                          ].map((category) => (
+                            <button
+                              key={category.key}
+                              onClick={() => setActiveFilterCategory(category.key)}
+                              style={{
+                                display: 'flex',
+                                width: '100%',
+                                padding: '12px',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                marginBottom: '4px'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <span style={{
+                                color: '#FFF',
+                                fontFamily: '"Inter Display", sans-serif',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                lineHeight: '20px'
+                              }}>
+                                {category.label}
+                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {category.count > 0 && (
+                                  <div style={{
+                                    display: 'flex',
+                                    width: '20px',
+                                    height: '20px',
+                                    padding: '2px 6px',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    borderRadius: '100px',
+                                    background: '#875BF7'
+                                  }}>
+                                    <span style={{
+                                      color: '#FFF',
+                                      fontFamily: '"Inter Display", sans-serif',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      lineHeight: '16px'
+                                    }}>
+                                      {category.count}
+                                    </span>
+                                  </div>
+                                )}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                  <path d="M6 12L10 8L6 4" stroke="#A0A0AB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            </button>
+                          ))}
+                          
+                          <button
+                            onClick={() => {
+                              setAppliedFilters({
+                                status: [],
+                                location: [],
+                                company: [],
+                                jobTitle: [],
+                                profiles: []
+                              })
+                            }}
+                            style={{
+                              display: 'flex',
+                              width: '100%',
+                              padding: '12px',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              marginTop: '8px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              background: '#26272B',
+                              cursor: 'pointer',
+                              color: '#FFF',
+                              fontFamily: '"Inter Display", sans-serif',
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              lineHeight: '20px'
+                            }}
+                          >
+                            Clear filter
+                          </button>
+                        </div>
+                      ) : (
+                        // Category-specific filter view
+                        <div>
+                          {/* Header */}
+                          <div style={{
                             display: 'flex',
+                            padding: '16px',
                             alignItems: 'center',
                             gap: '8px',
-                            cursor: 'pointer',
-                            padding: '4px 0'
-                          }}
-                        >
-                          <CustomCheckbox
-                            checked={selectedFilters[filter as keyof typeof selectedFilters]}
-                            onChange={() => {
-                              setSelectedFilters(prev => ({
-                                ...prev,
-                                [filter]: !prev[filter as keyof typeof selectedFilters]
-                              }))
-                            }}
-                          />
-                          <span style={{
-                            color: '#FFF',
-                            fontSize: '12px',
-                            fontWeight: 500
+                            borderBottom: '0.5px solid #26272B'
                           }}>
-                            {filter}
-                          </span>
-                        </label>
-                      ))}
+                            <button
+                              onClick={() => setActiveFilterCategory(null)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '4px'
+                              }}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M10 12L6 8L10 4" stroke="#A0A0AB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                            <span style={{
+                              color: '#FFF',
+                              fontFamily: '"Inter Display", sans-serif',
+                              fontSize: '16px',
+                              fontWeight: 600,
+                              lineHeight: '24px'
+                            }}>
+                              {activeFilterCategory === 'status' && 'Status'}
+                              {activeFilterCategory === 'location' && 'Location'}
+                              {activeFilterCategory === 'company' && 'Company'}
+                              {activeFilterCategory === 'jobTitle' && 'Job title'}
+                              {activeFilterCategory === 'profiles' && 'Profiles'}
+                            </span>
+                          </div>
+                          
+                          {/* Content */}
+                          <div style={{ padding: '12px', maxHeight: '300px', overflowY: 'auto' }}>
+                            {activeFilterCategory === 'status' && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {['Not Contacted', 'Email Sent', 'Interviewing', 'Hired', 'Rejected'].map((status) => (
+                                  <div
+                                    key={status}
+                                    onClick={() => {
+                                      setAppliedFilters(prev => ({
+                                        ...prev,
+                                        status: prev.status.includes(status)
+                                          ? prev.status.filter(s => s !== status)
+                                          : [...prev.status, status]
+                                      }))
+                                    }}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '12px',
+                                      cursor: 'pointer',
+                                      padding: '8px'
+                                    }}
+                                  >
+                                    <CustomCheckbox
+                                      checked={appliedFilters.status.includes(status)}
+                                      onChange={() => {}}
+                                    />
+                                    <span style={{
+                                      color: '#FFF',
+                                      fontFamily: '"Inter Display", sans-serif',
+                                      fontSize: '14px',
+                                      fontWeight: 500,
+                                      lineHeight: '20px'
+                                    }}>
+                                      {status}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {activeFilterCategory === 'profiles' && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {['Database', 'Career Page', 'In house'].map((profile) => (
+                                  <div
+                                    key={profile}
+                                    onClick={() => {
+                                      setAppliedFilters(prev => ({
+                                        ...prev,
+                                        profiles: prev.profiles.includes(profile)
+                                          ? prev.profiles.filter(p => p !== profile)
+                                          : [...prev.profiles, profile]
+                                      }))
+                                    }}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '12px',
+                                      cursor: 'pointer',
+                                      padding: '8px'
+                                    }}
+                                  >
+                                    <CustomCheckbox
+                                      checked={appliedFilters.profiles.includes(profile)}
+                                      onChange={() => {}}
+                                    />
+                                    <span style={{
+                                      color: '#FFF',
+                                      fontFamily: '"Inter Display", sans-serif',
+                                      fontSize: '14px',
+                                      fontWeight: 500,
+                                      lineHeight: '20px'
+                                    }}>
+                                      {profile}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {activeFilterCategory === 'location' && (
+                              <div>
+                                {/* Search bar */}
+                                <div style={{ marginBottom: '12px', position: 'relative' }}>
+                                  <Input
+                                    value={locationSearchInput}
+                                    onChange={(e) => setLocationSearchInput(e.target.value)}
+                                    placeholder="eg. Chennai, Tamil Nadu, India"
+                                    style={{
+                                      display: 'flex',
+                                      padding: '8px 12px',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      alignSelf: 'stretch',
+                                      borderRadius: '12px',
+                                      border: '0.5px solid #26272B',
+                                      background: '#1A1A1E',
+                                      boxShadow: '0 1px 2px 0 rgba(10, 13, 18, 0.05)',
+                                      overflow: 'hidden',
+                                      color: '#70707B',
+                                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                                      textOverflow: 'ellipsis',
+                                      fontFamily: '"Inter Display"',
+                                      fontSize: '16px',
+                                      fontStyle: 'normal',
+                                      fontWeight: 400,
+                                      lineHeight: '24px',
+                                      width: '100%'
+                                    }}
+                                  />
+                                  <svg
+                                    style={{
+                                      position: 'absolute',
+                                      right: '12px',
+                                      top: '50%',
+                                      transform: 'translateY(-50%)',
+                                      pointerEvents: 'none'
+                                    }}
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M7.33301 1.83203C10.3706 1.83203 12.833 4.29447 12.833 7.33203C12.833 8.63099 12.3834 9.82367 11.6309 10.7646L11.3506 11.1143L14.1172 13.8809C14.1823 13.9459 14.1823 14.0511 14.1172 14.1162C14.0521 14.1813 13.9469 14.1813 13.8818 14.1162L11.1152 11.3496L10.7656 11.6299C9.82464 12.3825 8.63196 12.832 7.33301 12.832C4.29544 12.832 1.83301 10.3696 1.83301 7.33203C1.83301 4.29447 4.29544 1.83203 7.33301 1.83203ZM7.33301 2.16504C4.47954 2.16504 2.16602 4.47856 2.16602 7.33203C2.16602 10.1855 4.47954 12.499 7.33301 12.499C10.1865 12.499 12.5 10.1855 12.5 7.33203C12.5 4.47856 10.1865 2.16504 7.33301 2.16504Z" fill="black" stroke="#70707B"/>
+                                  </svg>
+                                </div>
+                                {/* Location suggestions */}
+                                {locationSearchInput && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    {[
+                                      'Bangalore, Karnataka, India',
+                                      'Chennai, Tamil Nadu, India',
+                                      'Mumbai, Maharashtra, India',
+                                      'Delhi, India',
+                                      'Hyderabad, Telangana, India',
+                                      'Pune, Maharashtra, India'
+                                    ]
+                                      .filter(loc => loc.toLowerCase().includes(locationSearchInput.toLowerCase()))
+                                      .map((location) => (
+                                        <button
+                                          key={location}
+                                          onClick={() => {
+                                            if (!appliedFilters.location.includes(location)) {
+                                              setAppliedFilters(prev => ({
+                                                ...prev,
+                                                location: [...prev.location, location]
+                                              }))
+                                            }
+                                            setLocationSearchInput('')
+                                          }}
+                                          style={{
+                                            display: 'flex',
+                                            padding: '8px 12px',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            borderRadius: '6px',
+                                            border: 'none',
+                                            background: 'transparent',
+                                            cursor: 'pointer',
+                                            color: '#FFF',
+                                            fontFamily: '"Inter Display", sans-serif',
+                                            fontSize: '14px',
+                                            fontWeight: 500,
+                                            lineHeight: '20px',
+                                            textAlign: 'left'
+                                          }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                          {location}
+                                        </button>
+                                      ))}
+                                  </div>
+                                )}
+                                {/* Selected locations */}
+                                {appliedFilters.location.length > 0 && (
+                                  <div style={{ marginTop: '12px' }}>
+                                    <div style={{ color: '#70707B', fontSize: '12px', marginBottom: '8px' }}>Selected:</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      {appliedFilters.location.map((loc, idx) => (
+                                        <div
+                                          key={idx}
+                                          style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '6px 8px',
+                                            borderRadius: '6px',
+                                            background: '#26272B'
+                                          }}
+                                        >
+                                          <span style={{
+                                            color: '#FFF',
+                                            fontSize: '14px',
+                                            fontWeight: 500
+                                          }}>
+                                            {loc}
+                                          </span>
+                                          <button
+                                            onClick={() => {
+                                              setAppliedFilters(prev => ({
+                                                ...prev,
+                                                location: prev.location.filter((_, i) => i !== idx)
+                                              }))
+                                            }}
+                                            style={{
+                                              background: 'transparent',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              padding: '4px',
+                                              display: 'flex',
+                                              alignItems: 'center'
+                                            }}
+                                          >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                              <path d="M10.5 3.5L3.50041 10.4996M10.4996 10.5L3.5 3.50043" stroke="#A0A0AB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {activeFilterCategory === 'company' && (
+                              <div>
+                                {/* Search bar */}
+                                <div style={{ marginBottom: '12px', position: 'relative' }}>
+                                  <Input
+                                    value={companySearchInput}
+                                    onChange={(e) => setCompanySearchInput(e.target.value)}
+                                    placeholder="eg. Google, Amazon, Microsoft"
+                                    style={{
+                                      display: 'flex',
+                                      padding: '8px 12px',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      alignSelf: 'stretch',
+                                      borderRadius: '12px',
+                                      border: '0.5px solid #26272B',
+                                      background: '#1A1A1E',
+                                      boxShadow: '0 1px 2px 0 rgba(10, 13, 18, 0.05)',
+                                      overflow: 'hidden',
+                                      color: '#70707B',
+                                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                                      textOverflow: 'ellipsis',
+                                      fontFamily: '"Inter Display"',
+                                      fontSize: '16px',
+                                      fontStyle: 'normal',
+                                      fontWeight: 400,
+                                      lineHeight: '24px',
+                                      width: '100%'
+                                    }}
+                                  />
+                                  <svg
+                                    style={{
+                                      position: 'absolute',
+                                      right: '12px',
+                                      top: '50%',
+                                      transform: 'translateY(-50%)',
+                                      pointerEvents: 'none'
+                                    }}
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M7.33301 1.83203C10.3706 1.83203 12.833 4.29447 12.833 7.33203C12.833 8.63099 12.3834 9.82367 11.6309 10.7646L11.3506 11.1143L14.1172 13.8809C14.1823 13.9459 14.1823 14.0511 14.1172 14.1162C14.0521 14.1813 13.9469 14.1813 13.8818 14.1162L11.1152 11.3496L10.7656 11.6299C9.82464 12.3825 8.63196 12.832 7.33301 12.832C4.29544 12.832 1.83301 10.3696 1.83301 7.33203C1.83301 4.29447 4.29544 1.83203 7.33301 1.83203ZM7.33301 2.16504C4.47954 2.16504 2.16602 4.47856 2.16602 7.33203C2.16602 10.1855 4.47954 12.499 7.33301 12.499C10.1865 12.499 12.5 10.1855 12.5 7.33203C12.5 4.47856 10.1865 2.16504 7.33301 2.16504Z" fill="black" stroke="#70707B"/>
+                                  </svg>
+                                </div>
+                                {/* Company suggestions */}
+                                {companySearchInput && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    {[
+                                      'Google',
+                                      'Amazon',
+                                      'Microsoft',
+                                      'Meta',
+                                      'Apple',
+                                      'Netflix',
+                                      'Tesla',
+                                      'Adobe',
+                                      'Salesforce',
+                                      'Oracle'
+                                    ]
+                                      .filter(comp => comp.toLowerCase().includes(companySearchInput.toLowerCase()))
+                                      .map((company) => (
+                                        <button
+                                          key={company}
+                                          onClick={() => {
+                                            if (!appliedFilters.company.includes(company)) {
+                                              setAppliedFilters(prev => ({
+                                                ...prev,
+                                                company: [...prev.company, company]
+                                              }))
+                                            }
+                                            setCompanySearchInput('')
+                                          }}
+                                          style={{
+                                            display: 'flex',
+                                            padding: '8px 12px',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            borderRadius: '6px',
+                                            border: 'none',
+                                            background: 'transparent',
+                                            cursor: 'pointer',
+                                            color: '#FFF',
+                                            fontFamily: '"Inter Display", sans-serif',
+                                            fontSize: '14px',
+                                            fontWeight: 500,
+                                            lineHeight: '20px',
+                                            textAlign: 'left'
+                                          }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                          {company}
+                                        </button>
+                                      ))}
+                                  </div>
+                                )}
+                                {/* Selected companies */}
+                                {appliedFilters.company.length > 0 && (
+                                  <div style={{ marginTop: '12px' }}>
+                                    <div style={{ color: '#70707B', fontSize: '12px', marginBottom: '8px' }}>Selected:</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      {appliedFilters.company.map((comp, idx) => (
+                                        <div
+                                          key={idx}
+                                          style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '6px 8px',
+                                            borderRadius: '6px',
+                                            background: '#26272B'
+                                          }}
+                                        >
+                                          <span style={{
+                                            color: '#FFF',
+                                            fontSize: '14px',
+                                            fontWeight: 500
+                                          }}>
+                                            {comp}
+                                          </span>
+                                          <button
+                                            onClick={() => {
+                                              setAppliedFilters(prev => ({
+                                                ...prev,
+                                                company: prev.company.filter((_, i) => i !== idx)
+                                              }))
+                                            }}
+                                            style={{
+                                              background: 'transparent',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              padding: '4px',
+                                              display: 'flex',
+                                              alignItems: 'center'
+                                            }}
+                                          >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                              <path d="M10.5 3.5L3.50041 10.4996M10.4996 10.5L3.5 3.50043" stroke="#A0A0AB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {activeFilterCategory === 'jobTitle' && (
+                              <div>
+                                {/* Search bar */}
+                                <div style={{ marginBottom: '12px', position: 'relative' }}>
+                                  <Input
+                                    value={jobTitleSearchInput}
+                                    onChange={(e) => setJobTitleSearchInput(e.target.value)}
+                                    placeholder="eg. UX Designer, Product Manager"
+                                    style={{
+                                      display: 'flex',
+                                      padding: '8px 12px',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      alignSelf: 'stretch',
+                                      borderRadius: '12px',
+                                      border: '0.5px solid #26272B',
+                                      background: '#1A1A1E',
+                                      boxShadow: '0 1px 2px 0 rgba(10, 13, 18, 0.05)',
+                                      overflow: 'hidden',
+                                      color: '#70707B',
+                                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                                      textOverflow: 'ellipsis',
+                                      fontFamily: '"Inter Display"',
+                                      fontSize: '16px',
+                                      fontStyle: 'normal',
+                                      fontWeight: 400,
+                                      lineHeight: '24px',
+                                      width: '100%'
+                                    }}
+                                  />
+                                  <svg
+                                    style={{
+                                      position: 'absolute',
+                                      right: '12px',
+                                      top: '50%',
+                                      transform: 'translateY(-50%)',
+                                      pointerEvents: 'none'
+                                    }}
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M7.33301 1.83203C10.3706 1.83203 12.833 4.29447 12.833 7.33203C12.833 8.63099 12.3834 9.82367 11.6309 10.7646L11.3506 11.1143L14.1172 13.8809C14.1823 13.9459 14.1823 14.0511 14.1172 14.1162C14.0521 14.1813 13.9469 14.1813 13.8818 14.1162L11.1152 11.3496L10.7656 11.6299C9.82464 12.3825 8.63196 12.832 7.33301 12.832C4.29544 12.832 1.83301 10.3696 1.83301 7.33203C1.83301 4.29447 4.29544 1.83203 7.33301 1.83203ZM7.33301 2.16504C4.47954 2.16504 2.16602 4.47856 2.16602 7.33203C2.16602 10.1855 4.47954 12.499 7.33301 12.499C10.1865 12.499 12.5 10.1855 12.5 7.33203C12.5 4.47856 10.1865 2.16504 7.33301 2.16504Z" fill="black" stroke="#70707B"/>
+                                  </svg>
+                                </div>
+                                {/* Job title suggestions */}
+                                {jobTitleSearchInput && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    {[
+                                      'UX Designer',
+                                      'UI Designer',
+                                      'Product Designer',
+                                      'Product Manager',
+                                      'Software Engineer',
+                                      'Frontend Developer',
+                                      'Backend Developer',
+                                      'Full Stack Developer',
+                                      'Data Scientist',
+                                      'DevOps Engineer'
+                                    ]
+                                      .filter(title => title.toLowerCase().includes(jobTitleSearchInput.toLowerCase()))
+                                      .map((jobTitle) => (
+                                        <button
+                                          key={jobTitle}
+                                          onClick={() => {
+                                            if (!appliedFilters.jobTitle.includes(jobTitle)) {
+                                              setAppliedFilters(prev => ({
+                                                ...prev,
+                                                jobTitle: [...prev.jobTitle, jobTitle]
+                                              }))
+                                            }
+                                            setJobTitleSearchInput('')
+                                          }}
+                                          style={{
+                                            display: 'flex',
+                                            padding: '8px 12px',
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            borderRadius: '6px',
+                                            border: 'none',
+                                            background: 'transparent',
+                                            cursor: 'pointer',
+                                            color: '#FFF',
+                                            fontFamily: '"Inter Display", sans-serif',
+                                            fontSize: '14px',
+                                            fontWeight: 500,
+                                            lineHeight: '20px',
+                                            textAlign: 'left'
+                                          }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = '#26272B'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                          {jobTitle}
+                                        </button>
+                                      ))}
+                                  </div>
+                                )}
+                                {/* Selected job titles */}
+                                {appliedFilters.jobTitle.length > 0 && (
+                                  <div style={{ marginTop: '12px' }}>
+                                    <div style={{ color: '#70707B', fontSize: '12px', marginBottom: '8px' }}>Selected:</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      {appliedFilters.jobTitle.map((title, idx) => (
+                                        <div
+                                          key={idx}
+                                          style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '6px 8px',
+                                            borderRadius: '6px',
+                                            background: '#26272B'
+                                          }}
+                                        >
+                                          <span style={{
+                                            color: '#FFF',
+                                            fontSize: '14px',
+                                            fontWeight: 500
+                                          }}>
+                                            {title}
+                                          </span>
+                                          <button
+                                            onClick={() => {
+                                              setAppliedFilters(prev => ({
+                                                ...prev,
+                                                jobTitle: prev.jobTitle.filter((_, i) => i !== idx)
+                                              }))
+                                            }}
+                                            style={{
+                                              background: 'transparent',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              padding: '4px',
+                                              display: 'flex',
+                                              alignItems: 'center'
+                                            }}
+                                          >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                              <path d="M10.5 3.5L3.50041 10.4996M10.4996 10.5L3.5 3.50043" stroke="#A0A0AB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-                </button>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
