@@ -279,7 +279,7 @@ export default function Dashboard() {
 
       <div className="min-h-screen transition-all duration-300" style={{ marginLeft: sidebarCollapsed ? '72px' : '256px' }}>
         {/* Main content */}
-        <main className={`min-h-screen relative overflow-hidden transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`} style={{ backgroundColor: '#131316', borderRadius: '16px 0 0 16px' }}>
+        <main className={`min-h-screen relative overflow-hidden transition-all duration-300 ${showModal || showFilterModal ? 'blur-[2px]' : ''}`} style={{ backgroundColor: '#0E0E10', borderRadius: '16px 0 0 16px' }}>
           <div className="relative z-10 min-h-screen flex flex-col items-center justify-center text-white">
             <EmptyState />
             <SearchBar

@@ -37,13 +37,13 @@ export default function SearchBar({
 
   return (
     <div 
-      className="mx-auto w-full max-w-[640px] rounded-3xl bg-[#161619] border-x-1 border-b-1 transition-all duration-300"
+      className="mx-auto w-full max-w-[640px] rounded-3xl bg-[#131316] border-x-[0.5px] border-b-[0.5px] transition-all duration-300"
       style={{
         boxShadow: searchInput.trim() ? '0 0 47px 0 rgba(135, 91, 247, 0.10)' : 'none'
       }}
     >
       <div 
-        className="max-w-[640px] mx-auto p-4 bg-[#1A1A1E] rounded-2xl border-2 transition-colors duration-300"
+        className="max-w-[640px] mx-auto p-4 bg-[#1A1A1E] rounded-2xl border-[0.5px] transition-colors duration-300"
       >
         <div className="mb-4">
           <Input

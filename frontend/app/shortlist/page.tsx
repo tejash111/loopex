@@ -1,13 +1,59 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/dashboard/Sidebar'
 import ProjectModal from '@/components/dashboard/ProjectModal'
 import EditQueryModal from '@/components/dashboard/EditQueryModal'
 import { ChevronDown } from 'lucide-react'
 
-const socialIcons = {
+const socialIcons = [
+  {
+    name: "whatsapp",
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <path d="M1 5.8C1 4.11984 1 3.27976 1.32698 2.63803C1.6146 2.07354 2.07354 1.6146 2.63803 1.32698C3.27976 1 4.11984 1 5.8 1H10.2C11.8802 1 12.7202 1 13.362 1.32698C13.9265 1.6146 14.3854 2.07354 14.673 2.63803C15 3.27976 15 4.11984 15 5.8V10.2C15 11.8802 15 12.7202 14.673 13.362C14.3854 13.9265 13.9265 14.3854 13.362 14.673C12.7202 15 11.8802 15 10.2 15H5.8C4.11984 15 3.27976 15 2.63803 14.673C2.07354 14.3854 1.6146 13.9265 1.32698 13.362C1 12.7202 1 11.8802 1 10.2V5.8Z" fill="url(#paint0_linear_3501_30884)"/>
+  <path d="M8 11.5C10.4853 11.5 12.5 9.82107 12.5 7.75C12.5 5.67893 10.4853 4 8 4C5.51472 4 3.5 5.67893 3.5 7.75C3.5 9.06275 4.30944 10.2179 5.5351 10.8879C5.49407 11.2213 5.37074 11.6663 5 12C5.70106 11.8738 6.26057 11.6202 6.67853 11.3357C7.09639 11.4425 7.54014 11.5 8 11.5Z" fill="white"/>
+  <defs>
+    <linearGradient id="paint0_linear_3501_30884" x1="8" y1="1" x2="8" y2="15" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#09D72C"/>
+      <stop offset="1" stop-color="#0F9622"/>
+    </linearGradient>
+  </defs>
+</svg>`
+  },
+  {
+    name: "drive",
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M12.4043 4.79395L9.03654 7.42218L5.5918 4.79395V4.79466L5.59596 4.79821V8.47845L8.9977 11.1635L12.4043 8.58216V4.79395Z" fill="#EA4335"/>
+      <path d="M13.2877 4.15484L12.4033 4.79414V8.58236L15.1863 6.44567V5.15854C15.1863 5.15854 14.8485 3.3202 13.2877 4.15484Z" fill="#FBBC05"/>
+      <path d="M12.4033 8.582V13.4954H14.5363C14.5363 13.4954 15.1433 13.4329 15.187 12.741V6.44531L12.4033 8.582Z" fill="#34A853"/>
+      <path d="M2.8125 6.4502V12.7459C2.85551 13.4385 3.46316 13.5003 3.46316 13.5003H5.59618L5.59133 8.47536L2.8125 6.4502Z" fill="#4285F4"/>
+    </svg>`
+  },
+  {
+    name: "linkedin",
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17" fill="none">
+      <rect x="1.0625" y="1.0625" width="14.875" height="14.875" rx="7.4375" fill="#1275B1"/>
+      <path d="M6.70361 5.14895C6.70361 5.64543 6.27327 6.04791 5.74243 6.04791C5.21158 6.04791 4.78125 5.64543 4.78125 5.14895C4.78125 4.65248 5.21158 4.25 5.74243 4.25C6.27327 4.25 6.70361 4.65248 6.70361 5.14895Z" fill="white"/>
+      <path d="M4.91269 6.70868H6.55573V11.6875H4.91269V6.70868Z" fill="white"/>
+      <path d="M9.20103 6.70868H7.55799V11.6875H9.20103C9.20103 11.6875 9.20103 10.1201 9.20103 9.14008C9.20103 8.55186 9.40188 7.96107 10.2033 7.96107C11.109 7.96107 11.1035 8.73084 11.0993 9.32721C11.0938 10.1067 11.107 10.9022 11.107 11.6875H12.75V9.05979C12.7361 7.38192 12.2989 6.60879 10.8605 6.60879C10.0063 6.60879 9.47682 6.99659 9.20103 7.34745V6.70868Z" fill="white"/>
+    </svg>`
+  },
+  {
+    name: "x",
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M7.88364 11.25L5.23505 7.47482L1.91935 11.25H0.516602L4.61271 6.58757L0.516602 0.75H4.11808L6.61434 4.30808L9.74204 0.75H11.1448L7.23877 5.1965L11.4851 11.25H7.88364Z" fill="white"/>
+    </svg>`
+  },
+  {
+    name: "github",
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M7 0C3.1339 0 0 3.1388 0 7.0119C0 10.1094 2.0055 12.7379 4.7873 13.6647C5.1373 13.7291 5.2647 13.5128 5.2647 13.3266C5.2647 13.1607 5.2591 12.719 5.2556 12.1345C3.3082 12.558 2.8973 11.1944 2.8973 11.1944C2.5795 10.3838 2.1203 10.1682 2.1203 10.1682C1.4847 9.7342 2.1686 9.7426 2.1686 9.7426C2.8707 9.7916 3.2403 10.465 3.2403 10.465C3.8647 11.536 4.879 11.2266 5.2773 11.0474C5.3417 10.5945 5.5223 10.2858 5.7225 10.1108C4.1685 9.9337 2.534 9.3317 2.534 6.6451C2.534 5.88 2.807 5.2535 3.2543 4.7635C3.1822 4.5864 2.9421 3.8731 3.3229 2.9085C3.9109 2.7195 5.2479 3.6267 5.8189 3.4709C6.4081 3.3916 7 3.3908 7 3.3908C8.1935 3.4713 8.7528 3.6267 10.0891 2.7195C11.0579 3.8731 10.8171 4.5864 10.7457 4.7635C11.4653 5.88 11.4653 6.6451 11.4653 6.6451C11.4653 9.3387 9.828 9.9316 8.2691 10.1052C8.5204 10.3215 8.7437 10.7492 8.7437 11.4037C8.7437 12.3403 8.7353 13.097 8.7353 13.3266C8.8613 13.7326 9.2169 13.664 10.6108 13.1965C11.8225 12.3027 12.6808 11.109 13.5391 9.9154C14.0006 8.4821 14 3.1388 7 0Z" fill="white"/>
+    </svg>`
+  }
+];
+
+const socialIconsOld = {
   whatsapp: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
     <path d="M1 5.8C1 4.11984 1 3.27976 1.32698 2.63803C1.6146 2.07354 2.07354 1.6146 2.63803 1.32698C3.27976 1 4.11984 1 5.8 1H10.2C11.8802 1 12.7202 1 13.362 1.32698C13.9265 1.6146 14.3854 2.07354 14.673 2.63803C15 3.27976 15 4.11984 15 5.8V10.2C15 11.8802 15 12.7202 14.673 13.362C14.3854 13.9265 13.9265 14.3854 13.362 14.673C12.7202 15 11.8802 15 10.2 15H5.8C4.11984 15 3.27976 15 2.63803 14.673C2.07354 14.3854 1.6146 13.9265 1.32698 13.362C1 12.7202 1 11.8802 1 10.2V5.8Z" fill="url(#paint0_linear_whatsapp)"/>
     <path d="M8 11.5C10.4853 11.5 12.5 9.82107 12.5 7.75C12.5 5.67893 10.4853 4 8 4C5.51472 4 3.5 5.67893 3.5 7.75C3.5 9.06275 4.30944 10.2179 5.5351 10.8879C5.49407 11.2213 5.37074 11.6663 5 12C5.70106 11.8738 6.26057 11.6202 6.67853 11.3357C7.09639 11.4425 7.54014 11.5 8 11.5Z" fill="white"/>
@@ -88,6 +134,19 @@ export default function ShortlistPage() {
     'Rejected': false
   })
 
+  const sortButtonRef = useRef<HTMLButtonElement>(null)
+  const filterButtonRef = useRef<HTMLButtonElement>(null)
+  const sortDropdownRef = useRef<HTMLDivElement>(null)
+  const filterDropdownRef = useRef<HTMLDivElement>(null)
+
+  const [selectedProfile, setSelectedProfile] = useState<ShortlistedProfile | null>(null)
+  const [profileActiveTab, setProfileActiveTab] = useState('Overview')
+  const overviewSectionRef = useRef<HTMLDivElement>(null)
+  const experienceSectionRef = useRef<HTMLDivElement>(null)
+  const educationSectionRef = useRef<HTMLDivElement>(null)
+  const skillSectionRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
   // Custom Checkbox Component
   const CustomCheckbox = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
     <div
@@ -132,6 +191,31 @@ export default function ShortlistPage() {
     }
     setSelectedItems(newSelected)
   }
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortButtonRef.current && sortDropdownRef.current) {
+        if (!sortButtonRef.current.contains(event.target as Node) && !sortDropdownRef.current.contains(event.target as Node)) {
+          setShowSortDropdown(false)
+        }
+      }
+      if (filterButtonRef.current && filterDropdownRef.current) {
+        if (!filterButtonRef.current.contains(event.target as Node) && !filterDropdownRef.current.contains(event.target as Node)) {
+          setShowFilterDropdown(false)
+        }
+      }
+      
+      // Close status dropdowns when clicking outside
+      const target = event.target as HTMLElement
+      if (!target.closest('[data-status-dropdown]')) {
+        setStatusDropdownOpen({})
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Fetch user projects
   useEffect(() => {
@@ -406,7 +490,8 @@ export default function ShortlistPage() {
               border: '0.5px solid #1a1a1a',
               background: '#0E0E10',
               boxShadow: '0 1px 2px 0 rgba(10, 13, 18, 0.05)',
-              overflow: 'hidden'
+              overflow: 'visible',
+              position: 'relative'
             }}
           >
             <div className="flex items-center justify-between p-4 border-b w-full" style={{ borderColor: '#6272B' }}>
@@ -539,6 +624,7 @@ export default function ShortlistPage() {
                 </div>
 
                 <button
+                  ref={sortButtonRef}
                   onClick={() => setShowSortDropdown(!showSortDropdown)}
                   style={{
                     position: 'relative',
@@ -569,8 +655,12 @@ export default function ShortlistPage() {
                   {/* Sort Dropdown */}
                   {showSortDropdown && (
                     <div
+                      ref={sortDropdownRef}
                       style={{
-                        position: 'fixed',
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '4px',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '4px',
@@ -622,6 +712,7 @@ export default function ShortlistPage() {
                 </button>
 
                 <button
+                  ref={filterButtonRef}
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                   style={{
                     position: 'relative',
@@ -657,8 +748,12 @@ export default function ShortlistPage() {
                   {/* Filter Dropdown */}
                   {showFilterDropdown && (
                     <div
+                      ref={filterDropdownRef}
                       style={{
-                        position: 'fixed',
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '4px',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '8px',
@@ -737,7 +832,7 @@ export default function ShortlistPage() {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto w-full" style={{ position: 'relative' }}>
+            <div className="overflow-x-auto w-full" style={{ position: 'relative', overflow: 'visible' }}>
               <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ 
@@ -899,9 +994,12 @@ export default function ShortlistPage() {
                             alignItems: 'center',
                             alignSelf: 'stretch',
                             borderBottom: index === filteredArray.length - 1 ? 'none' : '0.5px solid #26272B',
-                            background: '#0E0E10'
+                            background: '#0E0E10',
+                            position: 'relative',
+                            overflow: 'visible',
+                            zIndex: 1
                           }}
-                          className="hover:bg-[#26272B] transition-colors cursor-pointer"
+                          className="hover:bg-[#131316] transition-colors"
                         >
                           <td style={{ 
                             width: '60px', 
@@ -922,7 +1020,12 @@ export default function ShortlistPage() {
                             alignItems: 'center',
                             padding: '16px 24px',
                             height: '100%',
-                            borderRight: '0.5px solid #26272B'
+                            borderRight: '0.5px solid #26272B',
+                            cursor: 'pointer'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedProfile(item)
                           }}>
                             <span style={{ 
                               display: '-webkit-box',
@@ -952,15 +1055,15 @@ export default function ShortlistPage() {
                           }}>
                             <div className="flex items-center gap-2">
                               {item.profileId?.socials?.whatsapp && (
-                                <div dangerouslySetInnerHTML={{ __html: socialIcons.whatsapp }} />
+                                <div dangerouslySetInnerHTML={{ __html: socialIconsOld.whatsapp }} />
                               )}
-                              <div dangerouslySetInnerHTML={{ __html: socialIcons.gmail }} />
+                              <div dangerouslySetInnerHTML={{ __html: socialIconsOld.gmail }} />
                               {item.profileId?.socials?.linkedin && (
-                                <div dangerouslySetInnerHTML={{ __html: socialIcons.linkedin }} />
+                                <div dangerouslySetInnerHTML={{ __html: socialIconsOld.linkedin }} />
                               )}
-                              <div dangerouslySetInnerHTML={{ __html: socialIcons.x }} />
+                              <div dangerouslySetInnerHTML={{ __html: socialIconsOld.x }} />
                               {item.profileId?.socials?.github && (
-                                <div dangerouslySetInnerHTML={{ __html: socialIcons.github }} />
+                                <div dangerouslySetInnerHTML={{ __html: socialIconsOld.github }} />
                               )}
                             </div>
                           </td>
@@ -970,17 +1073,31 @@ export default function ShortlistPage() {
                             alignItems: 'center',
                             padding: '16px 24px',
                             height: '100%',
-                            borderRight: '0.5px solid #26272B'
+                            borderRight: '0.5px solid #26272B',
+                            position: 'relative',
+                            overflow: 'visible',
+                            zIndex: statusDropdownOpen[item._id] ? 9998 : 10
                           }}>
-                            <div style={{ position: 'relative', width: '100%', zIndex: 50 }}>
+                            <div data-status-dropdown style={{ position: 'relative', width: '100%' }}>
                               <button
-                                onClick={() => setStatusDropdownOpen(prev => ({ ...prev, [item._id]: !prev[item._id] }))}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setStatusDropdownOpen(prev => {
+                                    const isCurrentlyOpen = prev[item._id]
+                                    // Close all dropdowns
+                                    const allClosed = Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {})
+                                    // Toggle current one
+                                    return { ...allClosed, [item._id]: !isCurrentlyOpen }
+                                  })
+                                }}
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-md"
                                 style={{
                                   background: '#26272B',
                                   border: '0.5px solid #3F3F46',
                                   width: '100%',
-                                  justifyContent: 'space-between'
+                                  justifyContent: 'space-between',
+                                  position: 'relative',
+                                  zIndex: 1
                                 }}
                               >
                                 <span style={{ color: '#FFF', fontSize: '12px' }}>
@@ -992,8 +1109,12 @@ export default function ShortlistPage() {
                               {/* Status Dropdown */}
                               {statusDropdownOpen[item._id] && (
                                 <div
+                                  data-status-dropdown
                                   style={{
-                                    position: 'fixed',
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    marginTop: '4px',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: '4px',
@@ -1002,7 +1123,7 @@ export default function ShortlistPage() {
                                     border: '0.5px solid #26272B',
                                     background: '#1A1A1E',
                                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                                    zIndex: 1000,
+                                    zIndex: 9999,
                                     minWidth: '140px'
                                   }}
                                   onClick={(e) => e.stopPropagation()}
@@ -1010,7 +1131,8 @@ export default function ShortlistPage() {
                                   {['Not Contacted', 'Email Sent', 'Interviewing', 'Hired', 'Rejected'].map((status) => (
                                     <button
                                       key={status}
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation()
                                         setProfileStatus(prev => ({ ...prev, [item._id]: status }))
                                         setStatusDropdownOpen(prev => ({ ...prev, [item._id]: false }))
                                       }}
@@ -1129,6 +1251,626 @@ export default function ShortlistPage() {
             </div>
           </div>
         </main>
+
+        {/* Profile Detail Sidebar */}
+        {selectedProfile && (
+          <aside
+            style={{
+              display: 'flex',
+              minWidth: '287px',
+              maxWidth: '500px',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              flex: '1 0 0',
+              borderRadius: '0',
+              background: '#0E0E10',
+              borderLeft: '1px solid #26272B',
+              height: '100vh',
+              position: 'sticky',
+              top: 0,
+              overflow: 'hidden'
+            }}
+          >
+            {/* Fixed Header Section */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                width: '100%',
+                background: '#0E0E10',
+                borderBottom: '1px solid #26272B',
+                padding: '16px',
+                flexShrink: 0
+              }}>
+              {/* Top row: Close button and navigation */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <button
+                  onClick={() => setSelectedProfile(null)}
+                  style={{
+                    display: 'flex',
+                    padding: '6px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderRadius: '8px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M13.5 4.5L4.50061 13.4994M13.4994 13.5L4.5 4.50064" stroke="#A48AFB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                
+                {/* Navigation arrows */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button style={{
+                    display: 'flex',
+                    padding: '6px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderRadius: '8px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E',
+                    cursor: 'pointer'
+                  }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path d="M15.5625 12.3125C15.7006 12.3125 15.8125 12.4245 15.8125 12.5625C15.8125 13.2409 15.815 13.6334 15.7275 13.96C15.4963 14.8224 14.8223 15.4953 13.96 15.7266C13.6334 15.8141 13.241 15.8125 12.5625 15.8125H5.4375C4.75921 15.8125 4.36749 15.814 4.04102 15.7266C3.17849 15.4955 2.50474 14.8225 2.27344 13.96C2.18594 13.6334 2.1875 13.241 2.1875 12.5625C2.1875 12.4245 2.29949 12.3125 2.4375 12.3125C2.57555 12.3125 2.6875 12.4245 2.6875 12.5625C2.6875 13.2726 2.68968 13.5831 2.75586 13.8301C2.94078 14.5202 3.47973 15.0592 4.16992 15.2441C4.41685 15.3102 4.72747 15.3125 5.4375 15.3125H12.5645L13.0332 15.3115H13.0361C13.4134 15.3077 13.6344 15.2966 13.8301 15.2441C14.5202 15.0592 15.0592 14.5203 15.2441 13.8301C15.3104 13.583 15.3125 13.2725 15.3125 12.5625C15.3125 12.4245 15.4245 12.3125 15.5625 12.3125Z" fill="#A48AFB" stroke="#A48AFB"/>
+                      <path d="M9.00009 1.6875C8.58587 1.6875 8.25009 2.02328 8.25009 2.4375V10.3946C8.02202 10.1657 7.78074 9.90451 7.54547 9.63353C7.19064 9.22486 6.86099 8.81356 6.61898 8.50343C6.49828 8.34878 6.297 8.08253 6.22933 7.99291C5.98376 7.65946 5.51401 7.58783 5.1805 7.83323C4.84707 8.07878 4.77545 8.54858 5.02083 8.88211C5.09256 8.97706 5.3099 9.26453 5.43611 9.42623C5.68788 9.74888 6.03488 10.1816 6.41243 10.6165C6.78686 11.0477 7.20656 11.4983 7.60119 11.8469C7.79762 12.0205 8.00567 12.185 8.21274 12.3098C8.39927 12.4223 8.68014 12.5625 9.00009 12.5625C9.32004 12.5625 9.60092 12.4223 9.78744 12.3098C9.99452 12.185 10.2026 12.0205 10.399 11.8469C10.7936 11.4983 11.2133 11.0477 11.5877 10.6165C11.9653 10.1816 12.3122 9.74888 12.564 9.42623C12.6902 9.26453 12.9076 8.97706 12.9793 8.88211C13.2247 8.54858 13.1531 8.07953 12.8197 7.83398C12.4862 7.58836 12.0164 7.65938 11.7708 7.99291C11.7032 8.08253 11.5019 8.34878 11.3812 8.50343C11.1392 8.81348 10.8095 9.22486 10.4546 9.63353C10.2194 9.90443 9.97817 10.1657 9.75009 10.3946V2.4375C9.75009 2.02329 9.41432 1.68752 9.00009 1.6875Z" fill="#A48AFB"/>
+                    </svg>
+                  </button>
+                  <button style={{
+                    display: 'flex',
+                    padding: '6px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderRadius: '8px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E',
+                    cursor: 'pointer'
+                  }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path d="M11.25 4.5C11.25 4.5 6.75001 7.81418 6.75 9C6.74999 10.1859 11.25 13.5 11.25 13.5" stroke="#A48AFB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <button style={{
+                    display: 'flex',
+                    padding: '6px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderRadius: '8px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E',
+                    cursor: 'pointer'
+                  }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path d="M6.75004 4.5C6.75004 4.5 11.25 7.81418 11.25 9C11.25 10.1859 6.75 13.5 6.75 13.5" stroke="#A48AFB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Profile name and social icons row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 style={{
+                    color: '#FFF',
+                    fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                    fontSize: '18px',
+                    fontWeight: 600,
+                    lineHeight: '28px',
+                    margin: 0
+                  }}>
+                    {selectedProfile.profileId?.name || 'Unknown'}
+                  </h2>
+                  {/* Social Icons */}
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {socialIcons.map((icon) => (
+                      <button
+                        key={icon.name}
+                        style={{
+                          display: 'flex',
+                          padding: '4px',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          borderRadius: '6px',
+                          border: '0.5px solid #3F3F46',
+                          background: '#1A1A1E',
+                          cursor: 'pointer'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: icon.svg }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Message Button */}
+                <button
+                  style={{
+                    display: 'flex',
+                    padding: '8px 12px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderRadius: '8px',
+                    background: '#875BF7',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M6.51944 1.2145C7.49094 1.14992 8.50641 1.14979 9.47994 1.2145C12.5243 1.41687 14.9399 3.8744 15.1385 6.94761C15.1756 7.52255 15.1756 8.11721 15.1385 8.69215C14.9399 11.7653 12.5243 14.2229 9.47994 14.4253C8.50641 14.4899 7.49094 14.4898 6.51944 14.4253C6.14282 14.4002 5.73286 14.3111 5.37193 14.1625C5.21321 14.0971 5.10546 14.0529 5.02661 14.024C4.9724 14.0613 4.90039 14.1142 4.79554 14.1915C4.26725 14.5811 3.60029 14.8543 2.65379 14.8313L2.6233 14.8306C2.44071 14.8262 2.24608 14.8216 2.08735 14.7909C1.89617 14.7539 1.65965 14.6614 1.51161 14.409C1.35049 14.1343 1.41509 13.8565 1.47759 13.6816C1.53658 13.5165 1.63883 13.3228 1.74329 13.125L1.75761 13.0979C2.06849 12.5087 2.1551 12.0273 1.98888 11.7063C1.43399 10.8687 0.934819 9.83641 0.860873 8.69215C0.823719 8.11721 0.823719 7.52255 0.860873 6.94761C1.05949 3.8744 3.47501 1.41687 6.51944 1.2145ZM5.16634 6.33268C5.16634 6.60882 5.3902 6.83268 5.66634 6.83268H7.99967C8.27581 6.83268 8.49967 6.60882 8.49967 6.33268C8.49967 6.05654 8.27581 5.83268 7.99967 5.83268H5.66634C5.3902 5.83268 5.16634 6.05654 5.16634 6.33268ZM5.16634 9.66601C5.16634 9.94215 5.3902 10.166 5.66634 10.166H10.333C10.6091 10.166 10.833 9.94215 10.833 9.66601C10.833 9.38988 10.6091 9.16601 10.333 9.16601H5.66634C5.3902 9.16601 5.16634 9.38988 5.16634 9.66601Z" fill="white"/>
+                  </svg>
+                  <span
+                    className='font-bold'
+                    style={{
+                      color: '#FFF',
+                      fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                      fontSize: '13px',
+                    }}>Message</span>
+                </button>
+              </div>
+
+              {/* Location */}
+              <p style={{
+                color: '#A0A0AB',
+                fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                fontSize: '14px',
+                fontWeight: 400,
+                lineHeight: '20px',
+                margin: 0
+              }}>
+                {selectedProfile.profileId?.location || 'Location not available'}
+              </p>
+
+              {/* Tabs */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '0',
+                width: '100%'
+              }}>
+                {['Overview', 'Experience', 'Education', 'Skill'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => {
+                      setProfileActiveTab(tab)
+                      const sectionMap: Record<string, React.RefObject<HTMLDivElement | null>> = {
+                        'Overview': overviewSectionRef,
+                        'Experience': experienceSectionRef,
+                        'Education': educationSectionRef,
+                        'Skill': skillSectionRef
+                      }
+                      const targetRef = sectionMap[tab]
+                      if (targetRef.current && scrollContainerRef.current) {
+                        const containerTop = scrollContainerRef.current.getBoundingClientRect().top
+                        const sectionTop = targetRef.current.getBoundingClientRect().top
+                        const scrollPosition = scrollContainerRef.current.scrollTop + (sectionTop - containerTop) - 20
+                        scrollContainerRef.current.scrollTo({ top: scrollPosition, behavior: 'smooth' })
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      height: '36px',
+                      padding: '8px 12px',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '8px',
+                      flex: '1 0 0',
+                      borderRadius: profileActiveTab === tab ? '10px' : '0',
+                      border: profileActiveTab === tab ? '0.5px solid #26272B' : 'none',
+                      background: profileActiveTab === tab ? '#1A1A1E' : 'transparent',
+                      color: profileActiveTab === tab ? '#FFF' : '#70707B',
+                      fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                      fontSize: '14px',
+                      fontStyle: 'normal',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Scrollable Content Section */}
+            <div 
+              ref={scrollContainerRef}
+              className="hide-scrollbar"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                padding: '16px',
+                width: '100%',
+                overflowY: 'auto',
+                flex: 1,
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
+              }}
+            >
+              {/* Manage Profile Section - Overview */}
+              <div ref={overviewSectionRef}></div>
+              <div 
+                className='border-[0.5px] border-[#1A1A1E]'
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '12px', 
+                  width: '100%',
+                  padding: '16px',
+                  background: '#0E0E10',
+                  borderRadius: '12px',
+                }}>
+                <p style={{
+                  color: '#70707B',
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  margin: 0
+                }}>Manage profile</p>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button style={{
+                    display: 'flex',
+                    padding: '8px 12px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderRadius: '8px',
+                    background: '#875BF7',
+                    border: 'none',
+                    cursor: 'pointer',
+                    flex: 1
+                  }}>
+                    <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Shortlist</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M2 13.9993L5.33333 10.666" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M8.83867 12.5809C6.34311 12.0143 3.9853 9.65653 3.41869 7.161C3.329 6.76593 3.28415 6.56844 3.41408 6.24798C3.54401 5.92753 3.70272 5.82837 4.02015 5.63006C4.73771 5.18177 5.5147 5.03925 6.32107 5.11057C7.45254 5.21065 8.01827 5.26069 8.30047 5.11365C8.58274 4.96661 8.77447 4.62278 9.15807 3.93513L9.64394 3.06403C9.96401 2.49019 10.1241 2.20327 10.5005 2.06801C10.877 1.93275 11.1035 2.01466 11.5567 2.17847C12.6163 2.56157 13.4381 3.38337 13.8212 4.44299C13.985 4.89611 14.0669 5.12267 13.9317 5.49913C13.7964 5.8756 13.5095 6.03564 12.9356 6.35572L12.0445 6.8528C11.3581 7.2356 11.0149 7.42707 10.8679 7.712C10.7209 7.997 10.7743 8.5504 10.8811 9.65727C10.9596 10.4712 10.8243 11.2533 10.37 11.9798C10.1715 12.2972 10.0722 12.4559 9.75187 12.5857C9.43147 12.7155 9.23387 12.6707 8.83867 12.5809Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <button style={{
+                    display: 'flex',
+                    padding: '8px 12px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderRadius: '8px',
+                    background: '#26272B',
+                    border: '0.5px solid #3F3F46',
+                    cursor: 'pointer',
+                    flex: 1
+                  }}>
+                    <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>Not Interested</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Work Experience Section */}
+              <div 
+                ref={experienceSectionRef}
+                className='p-[16px] bg-[#0E0E10] border-[0.5px] border-[#1A1A1E] rounded-[16px]'
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '16px', 
+                  width: '100%'
+                }}>
+                <h3 style={{
+                  color: '#FFF',
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  margin: 0
+                }}>Work experience</h3>
+
+                {/* Experience Stats */}
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    padding: '12px',
+                    flexDirection: 'column', 
+                    alignItems: 'flex-start',
+                    gap: '6px',
+                    flex: '1 0 0',
+                    borderRadius: '12px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E'
+                  }}>
+                    <span style={{ 
+                      color: '#70707B', 
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '18px'
+                    }}>Average tenure</span>
+                    <span style={{ 
+                      color: '#FFF', 
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      lineHeight: '20px'
+                    }}>
+                      3 yrs 1 mos
+                    </span>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    padding: '12px',
+                    flexDirection: 'column', 
+                    alignItems: 'flex-start',
+                    gap: '6px',
+                    flex: '1 0 0',
+                    borderRadius: '12px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E'
+                  }}>
+                    <span style={{ 
+                      color: '#70707B', 
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '18px'
+                    }}>Current tenure</span>
+                    <span style={{ 
+                      color: '#FFF', 
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      lineHeight: '20px'
+                    }}>
+                      7 yrs 2 mos
+                    </span>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    padding: '12px',
+                    flexDirection: 'column', 
+                    alignItems: 'flex-start',
+                    gap: '6px',
+                    flex: '1 0 0',
+                    borderRadius: '12px',
+                    border: '0.5px solid #26272B',
+                    background: '#1A1A1E'
+                  }}>
+                    <span style={{ 
+                      color: '#70707B', 
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '18px'
+                    }}>Total experience</span>
+                    <span style={{ 
+                      color: '#FFF', 
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      lineHeight: '20px'
+                    }}>
+                      24 yrs 8 mos
+                    </span>
+                  </div>
+                </div>
+
+                {/* Experience Item */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '12px',
+                  padding: '12px',
+                  background: '#131316',
+                  borderRadius: '12px'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    background: '#26272B',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <span style={{ color: '#875BF7', fontSize: '16px', fontWeight: 600 }}>
+                      {selectedProfile.profileId?.workExperience?.[0]?.company?.charAt(0) || 'C'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>
+                        Lead Product Designer
+                      </span>
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: '#172820',
+                        border: '0.5px solid #315F45',
+                        color: '#CAF7DA',
+                        fontSize: '12px'
+                      }}>Promoted</span>
+                    </div>
+                    <span style={{ color: '#A0A0AB', fontSize: '13px' }}>
+                      {selectedProfile.profileId?.workExperience?.[0]?.company || 'Company'}
+                    </span>
+                    <span style={{ color: '#70707B', fontSize: '12px' }}>
+                      May 2020 - Present
+                    </span>
+                    <p style={{ 
+                      color: '#9CA3AF', 
+                      fontSize: '13px', 
+                      lineHeight: '20px',
+                      margin: '8px 0 0 0'
+                    }}>
+                      Designing tailored user experiences for high-net-worth clients in the financial sector, enhancing int...
+                      <button style={{
+                        color: '#875BF7',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        marginLeft: '4px'
+                      }}>Show more</button>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Education Section */}
+              <div 
+                ref={educationSectionRef}
+                className='p-[16px] bg-[#0E0E10] border-[0.5px] border-[#1A1A1E] rounded-[16px]'
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '12px', 
+                  width: '100%'
+                }}>
+                <h3 style={{
+                  color: '#FFF',
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  margin: 0
+                }}>Education</h3>
+
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '12px',
+                  padding: '12px',
+                  background: '#1A1A1E',
+                  borderRadius: '12px'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    background: '#26272B',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <span style={{ color: '#875BF7', fontSize: '16px', fontWeight: 600 }}>U</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 500 }}>
+                      University
+                    </span>
+                    <span style={{ color: '#A0A0AB', fontSize: '13px' }}>
+                      Bachelor&apos;s Degree
+                    </span>
+                    <span style={{ color: '#70707B', fontSize: '12px' }}>
+                      Nov 2016 - May 2018
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Skills Section */}
+              <div 
+                ref={skillSectionRef}
+                className='p-[16px] bg-[#0E0E10] border-[0.5px] border-[#1A1A1E] rounded-[16px]'
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '12px', 
+                  width: '100%'
+                }}>
+                <h3 style={{
+                  color: '#FFF',
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  margin: 0
+                }}>Skills</h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span style={{ color: '#70707B', fontSize: '12px' }}>Front-end</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {['Wireframing', 'User Research', 'Prototyping', 'Usability Testing'].map((skill, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          display: 'flex',
+                          padding: '2px 6px',
+                          alignItems: 'center',
+                          borderRadius: '6px',
+                          border: '0.5px solid #3F3F46',
+                          background: '#26272B',
+                          color: '#FFF',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          lineHeight: '18px'
+                        }}
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span style={{ color: '#70707B', fontSize: '12px' }}>Additional Skills</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {['Prototyping', 'User Research', 'Usability Testing', 'Information Architecture', 'A/B Testing', 'Visual Design'].map((skill, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          display: 'flex',
+                          padding: '2px 6px',
+                          alignItems: 'center',
+                          borderRadius: '6px',
+                          border: '0.5px solid #3F3F46',
+                          background: '#26272B',
+                          color: '#FFF',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          lineHeight: '18px'
+                        }}
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Languages Section */}
+              <div 
+                className='p-[16px] bg-[#0E0E10] border-[0.5px] border-[#1A1A1E] rounded-[16px]'
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '12px', 
+                  width: '100%'
+                }}>
+                <h3 style={{
+                  color: '#FFF',
+                  fontFamily: "var(--Font-family-font-family-text, 'Inter Display')",
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  margin: 0
+                }}>Language</h3>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {['Telugu', 'Hindi', 'English'].map((lang, index) => (
+                    <span
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        padding: '2px 6px',
+                        alignItems: 'center',
+                        borderRadius: '6px',
+                        border: '0.5px solid #3F3F46',
+                        background: '#26272B',
+                        color: '#FFF',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        lineHeight: '18px'
+                      }}
+                    >
+                      {lang}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
       </div>
 
       {/* Fixed Action Buttons */}
