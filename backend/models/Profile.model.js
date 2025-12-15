@@ -60,6 +60,35 @@ const ProfileSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+// Middleware to generate embeddings on save
+ProfileSchema.pre('save', async function(next) {
+    try {
+        // Only regenerate embedding if profile data changed
+        const changedFields = this.modifiedPaths();
+        const relevantFields = ['name', 'location', 'workExperience', 'skills', 'additionalSkills', 'education', 'stats'];
+        const shouldRegenerate = relevantFields.some(field => changedFields.includes(field));
+
+        if (shouldRegenerate || this.profileEmbedding.length === 0) {
+            console.log(`[Profile] Generating embedding for profile: ${this._id || 'new'}`);
+            
+            // Lazy load to avoid circular dependency
+            const { generateEmbedding, profileToText } = require('../utils/embedding.util');
+            
+            const text = profileToText(this);
+            const embedding = await generateEmbedding(text);
+            this.profileEmbedding = embedding;
+            
+            console.log(`[Profile] Embedding generated (dimension: ${embedding.length})`);
+        }
+        
+        next();
+    } catch (error) {
+        console.error('[Profile] Error generating embedding:', error);
+        // Don't block profile save if embedding fails
+        next();
+    }
+});
+
 const Profile = mongoose.model('Profile', ProfileSchema);
 
 module.exports = Profile;

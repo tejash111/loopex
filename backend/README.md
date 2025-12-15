@@ -1,14 +1,40 @@
 # Loopex Backend
 
-Backend API for Loopex authentication with email verification using magic links.
+Backend API for Loopex with authentication, profile management, and **semantic search**.
 
 ## Features
 
-- Email verification with magic links
-- JWT token-based authentication
-- Nodemailer with Zoho SMTP integration
-- Express.js REST API
-- Secure token expiration (15 minutes)
+- 🔐 Email verification with magic links
+- 🔑 JWT token-based authentication
+- 👥 Profile and project management
+- 🔍 **Semantic Search** with embeddings (NEW! ✨)
+- 📧 Nodemailer with Zoho SMTP integration
+- 🚀 Express.js REST API
+- 🔒 Secure token expiration (15 minutes)
+
+## 🆕 Semantic Search (v2.0)
+
+**Upgrade complete!** Search now uses semantic embeddings for better relevance.
+
+### Quick Start
+```bash
+# 1. Generate embeddings for existing profiles
+node scripts/generateEmbeddings.js
+
+# 2. Run health check
+node scripts/healthCheck.js
+
+# 3. Test it
+node scripts/testSemanticSearch.js
+```
+
+### Documentation
+- 📖 **[Complete Guide](./README_SEMANTIC_SEARCH.md)** - Start here!
+- ⚡ **[Quick Reference](./QUICK_REFERENCE.md)** - Daily usage
+- 📋 **[Migration Checklist](./MIGRATION_CHECKLIST.md)** - Deployment guide
+- 📚 **[Full Documentation](./SEMANTIC_SEARCH.md)** - Technical deep dive
+
+**Frontend requires NO changes** - API contract unchanged! ✅
 
 ## Setup
 
