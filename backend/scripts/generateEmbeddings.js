@@ -47,7 +47,7 @@ async function generateEmbeddings() {
 
         for (let i = 0; i < profiles.length; i++) {
             const profile = profiles[i];
-            
+
             try {
                 console.log(`[${i + 1}/${profiles.length}] Processing: ${profile.name} (${profile._id})`);
 

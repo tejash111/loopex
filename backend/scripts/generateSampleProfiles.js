@@ -167,24 +167,24 @@ function generateExperienceString(years, months = null) {
 function generateProfile(index) {
     const name = `${randomElement(firstNames)} ${randomElement(lastNames)}`;
     const location = `${randomElement(cities)}, India`;
-    
+
     // Current job
     const currentJob = randomElement(jobTitles);
     const currentCompany = randomElement(companies);
     const yearsInCurrent = randomInt(1, 5);
-    
+
     // Previous job
     const previousJob = randomElement(jobTitles.filter(j => j.category === currentJob.category || Math.random() > 0.5));
     const previousCompany = randomElement(companies.filter(c => c !== currentCompany));
     const yearsInPrevious = randomInt(1, 4);
-    
+
     const totalYears = yearsInCurrent + yearsInPrevious;
     const totalMonths = randomInt(0, 11);
-    
+
     // Skills
     const skillSet = skillCategories[currentJob.category] || skillCategories['Full Stack'];
     const skills = randomElement(skillSet);
-    
+
     // Work Experience
     const workExperience = [
         {
@@ -206,13 +206,13 @@ function generateProfile(index) {
             location: randomElement(cities)
         }
     ];
-    
+
     // Education
     const institute = randomElement(institutes);
     const degree = randomElement(degrees);
     const field = randomElement(fields);
     const graduationYear = 2024 - totalYears - randomInt(0, 2);
-    
+
     const education = [{
         institute,
         degree,
@@ -220,19 +220,19 @@ function generateProfile(index) {
         startDate: new Date(graduationYear - 4, 6, 1),
         endDate: new Date(graduationYear, 4, 1)
     }];
-    
+
     // Additional skills
     const additionalSkills = {
         skills: randomElement(additionalSkillsPool)
     };
-    
+
     // Stats
     const stats = {
         averageTenure: generateExperienceString(Math.floor(totalYears / 2)),
         currentTenure: generateExperienceString(yearsInCurrent),
         totalExperience: generateExperienceString(totalYears, totalMonths)
     };
-    
+
     // Contact
     const firstName = name.split(' ')[0].toLowerCase();
     const socials = {
@@ -242,12 +242,12 @@ function generateProfile(index) {
         mail: `${firstName}.${randomInt(10, 99)}@example.com`,
         portfolio: Math.random() > 0.5 ? `https://${firstName}portfolio.dev` : undefined
     };
-    
+
     const languages = ['English', 'Hindi'];
     if (Math.random() > 0.5) {
         languages.push(randomElement(['Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Bengali', 'Marathi']));
     }
-    
+
     return {
         name,
         location,
@@ -264,17 +264,17 @@ function generateProfile(index) {
 async function generateProfiles() {
     try {
         await connectDB();
-        
+
         console.log('🔨 Generating 40 diverse profiles...\n');
-        
+
         let successCount = 0;
         let errorCount = 0;
-        
+
         for (let i = 1; i <= 40; i++) {
             try {
                 // Generate profile data
                 const profileData = generateProfile(i);
-                
+
                 // Create a dummy user first
                 const user = new User({
                     email: profileData.socials.mail,
@@ -283,30 +283,30 @@ async function generateProfiles() {
                     onboardingCompleted: true
                 });
                 await user.save();
-                
+
                 // Create profile with user reference
                 const profile = new Profile({
                     userId: user._id,
                     ...profileData
                 });
-                
+
                 // Save profile (embedding will be auto-generated via pre-save hook)
                 await profile.save();
-                
+
                 console.log(`[${i}/40] ✅ Created: ${profileData.name} - ${profileData.workExperience[0].title}`);
                 successCount++;
-                
+
                 // Small delay to avoid rate limiting
                 if (i % 5 === 0) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
-                
+
             } catch (error) {
                 console.log(`[${i}/40] ❌ Error: ${error.message}`);
                 errorCount++;
             }
         }
-        
+
         console.log('\n' + '='.repeat(60));
         console.log('📊 GENERATION SUMMARY');
         console.log('='.repeat(60));
@@ -314,25 +314,25 @@ async function generateProfiles() {
         console.log(`❌ Errors: ${errorCount}`);
         console.log(`📈 Total: 40`);
         console.log('='.repeat(60));
-        
+
         // Show final counts
         const totalProfiles = await Profile.countDocuments();
         const withEmbeddings = await Profile.countDocuments({
             profileEmbedding: { $exists: true, $not: { $size: 0 } }
         });
-        
+
         console.log(`\n📊 Database Status:`);
         console.log(`   Total profiles: ${totalProfiles}`);
         console.log(`   With embeddings: ${withEmbeddings}`);
         console.log(`   Without embeddings: ${totalProfiles - withEmbeddings}`);
-        
+
         if (totalProfiles - withEmbeddings > 0) {
             console.log(`\n💡 Run to generate embeddings for remaining profiles:`);
             console.log(`   node scripts/generateEmbeddings.js`);
         } else {
             console.log(`\n🎉 All profiles have embeddings!`);
         }
-        
+
     } catch (error) {
         console.error('❌ Generation failed:', error);
     } finally {

@@ -25,7 +25,7 @@ const connectDB = async () => {
 async function healthCheck() {
     console.log('🏥 Semantic Search Health Check\n');
     console.log('='.repeat(60));
-    
+
     const results = {
         passed: 0,
         failed: 0,
@@ -85,7 +85,7 @@ async function healthCheck() {
 
         console.log(`  ✅ Profiles with embeddings: ${withEmbeddings}`);
         console.log(`  ℹ️  Profiles without embeddings: ${withoutEmbeddings}`);
-        
+
         results.passed++;
 
         if (withoutEmbeddings > 0) {
@@ -103,7 +103,7 @@ async function healthCheck() {
     try {
         const testText = 'Senior Full Stack Developer with React and Node.js experience in Bangalore';
         const embedding = await generateEmbedding(testText);
-        
+
         if (embedding && Array.isArray(embedding) && embedding.length > 0) {
             console.log(`  ✅ Embedding generated successfully (dimension: ${embedding.length})`);
             results.passed++;
@@ -111,7 +111,7 @@ async function healthCheck() {
             // Check if normalized
             const magnitude = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
             const isNormalized = Math.abs(magnitude - 1.0) < 0.01;
-            
+
             if (isNormalized) {
                 console.log(`  ✅ Vector is normalized (magnitude: ${magnitude.toFixed(6)})`);
             } else {
@@ -132,9 +132,9 @@ async function healthCheck() {
     try {
         const vec1 = Array(384).fill(0).map(() => Math.random());
         const vec2 = Array(384).fill(0).map(() => Math.random());
-        
+
         const similarity = cosineSimilarity(vec1, vec2);
-        
+
         if (typeof similarity === 'number' && similarity >= 0 && similarity <= 1) {
             console.log(`  ✅ Similarity computed: ${similarity.toFixed(4)}`);
             results.passed++;
@@ -151,16 +151,16 @@ async function healthCheck() {
     console.log('\n✓ Check 7: Sample Profile Test');
     try {
         const sampleProfile = await Profile.findOne({ profileEmbedding: { $exists: true, $not: { $size: 0 } } });
-        
+
         if (sampleProfile) {
             console.log(`  ✅ Found profile with embedding: ${sampleProfile.name}`);
             console.log(`     Embedding dimension: ${sampleProfile.profileEmbedding.length}`);
-            
+
             // Test similarity with a query
             const query = 'developer';
             const queryEmbedding = await generateEmbedding(query);
             const similarity = cosineSimilarity(queryEmbedding, sampleProfile.profileEmbedding);
-            
+
             console.log(`     Similarity with query "${query}": ${(similarity * 100).toFixed(2)}%`);
             results.passed++;
         } else {

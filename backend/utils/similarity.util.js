@@ -53,8 +53,8 @@ function computeSimilarityScores(queryEmbedding, profiles) {
 
     for (const profile of profiles) {
         // Skip profiles without embeddings
-        if (!profile.profileEmbedding || 
-            !Array.isArray(profile.profileEmbedding) || 
+        if (!profile.profileEmbedding ||
+            !Array.isArray(profile.profileEmbedding) ||
             profile.profileEmbedding.length === 0) {
             continue;
         }
@@ -109,7 +109,7 @@ function applyHybridBoosting(scoredProfiles, filters, weights) {
         if (filters.minExperience !== null && profile.stats?.totalExperience) {
             const totalExp = parseExperienceToMonths(profile.stats.totalExperience);
             const minExpMonths = filters.minExperience * 12;
-            
+
             if (totalExp >= minExpMonths) {
                 boostScore += 10;
             }
@@ -120,7 +120,7 @@ function applyHybridBoosting(scoredProfiles, filters, weights) {
             ...(filters.skills || []),
             ...(filters.additionalSkills || [])
         ];
-        
+
         if (allRequestedSkills.length > 0) {
             const profileSkills = [
                 ...(profile.skills?.flatMap(s => s.skills || []) || []),
@@ -128,8 +128,8 @@ function applyHybridBoosting(scoredProfiles, filters, weights) {
             ].map(s => s.toLowerCase());
 
             const matchedSkills = allRequestedSkills.filter(reqSkill =>
-                profileSkills.some(profSkill => 
-                    profSkill.includes(reqSkill.toLowerCase()) || 
+                profileSkills.some(profSkill =>
+                    profSkill.includes(reqSkill.toLowerCase()) ||
                     reqSkill.toLowerCase().includes(profSkill)
                 )
             );
@@ -148,7 +148,7 @@ function applyHybridBoosting(scoredProfiles, filters, weights) {
             const locationMatch = locationVariations.some(loc =>
                 profile.location.toLowerCase().includes(loc.toLowerCase())
             );
-            
+
             if (locationMatch) {
                 boostScore += 5;
             }

@@ -93,19 +93,19 @@ async function generateEmbedding(text) {
  */
 function textToSemanticVector(text, features) {
     const vector = new Array(EMBEDDING_DIMENSION).fill(0);
-    
+
     // Extract words from original text
     const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 2);
     const keywords = features.keywords || [];
-    
+
     // Create a combined vocabulary with weights
     const vocabulary = new Map();
-    
+
     // Add regular words with base weight
     for (const word of words) {
         vocabulary.set(word, (vocabulary.get(word) || 0) + 0.5);
     }
-    
+
     // Add LLM-extracted keywords with their weights
     for (const kw of keywords) {
         if (kw.term && kw.weight) {
@@ -113,23 +113,23 @@ function textToSemanticVector(text, features) {
             vocabulary.set(term, (vocabulary.get(term) || 0) + (kw.weight * 2));
         }
     }
-    
+
     // Hash each term to multiple dimensions (SimHash approach)
     for (const [term, weight] of vocabulary.entries()) {
         const hash1 = djb2Hash(term);
         const hash2 = sdbmHash(term);
         const hash3 = loseHash(term);
-        
+
         // Map to 3 different positions for better distribution
         const idx1 = Math.abs(hash1) % EMBEDDING_DIMENSION;
         const idx2 = Math.abs(hash2) % EMBEDDING_DIMENSION;
         const idx3 = Math.abs(hash3) % EMBEDDING_DIMENSION;
-        
+
         vector[idx1] += weight;
         vector[idx2] += weight * 0.8;
         vector[idx3] += weight * 0.6;
     }
-    
+
     // Normalize to unit vector
     const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
     if (magnitude > 0) {
@@ -137,7 +137,7 @@ function textToSemanticVector(text, features) {
             vector[i] /= magnitude;
         }
     }
-    
+
     return vector;
 }
 
@@ -149,16 +149,16 @@ function textToSemanticVector(text, features) {
 function generateFallbackEmbedding(text) {
     const vector = new Array(EMBEDDING_DIMENSION).fill(0);
     const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 2);
-    
+
     // Term frequency
     const termFreq = new Map();
     for (const word of words) {
         termFreq.set(word, (termFreq.get(word) || 0) + 1);
     }
-    
+
     // Normalize by document length
     const docLength = words.length || 1;
-    
+
     // Hash each term to vector
     for (const [term, freq] of termFreq.entries()) {
         const tf = freq / docLength;
@@ -166,7 +166,7 @@ function generateFallbackEmbedding(text) {
         const idx = Math.abs(hash) % EMBEDDING_DIMENSION;
         vector[idx] += tf;
     }
-    
+
     // Normalize
     const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
     if (magnitude > 0) {
@@ -174,7 +174,7 @@ function generateFallbackEmbedding(text) {
             vector[i] /= magnitude;
         }
     }
-    
+
     return vector;
 }
 
@@ -234,7 +234,7 @@ function profileToText(profile) {
         });
         const currentJob = sortedExp[0];
         parts.push(`Current Role: ${currentJob.title} at ${currentJob.company}`);
-        
+
         // Add all job titles for better matching
         const allTitles = profile.workExperience.map(exp => exp.title).join(', ');
         parts.push(`Job Titles: ${allTitles}`);
@@ -287,7 +287,7 @@ function profileToText(profile) {
  */
 async function generateBatchEmbeddings(profiles) {
     const results = [];
-    
+
     for (const profile of profiles) {
         try {
             const text = profileToText(profile);
@@ -305,7 +305,7 @@ async function generateBatchEmbeddings(profiles) {
             });
         }
     }
-    
+
     return results;
 }
 
