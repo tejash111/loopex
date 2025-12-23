@@ -130,6 +130,8 @@ export default function ShortlistPage() {
   const [showEditQueryModal, setShowEditQueryModal] = useState(false)
   const [savedSearches, setSavedSearches] = useState<{_id: string, query: string, createdAt: string}[]>([])
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [selectedSavedSearchId, setSelectedSavedSearchId] = useState<string | null>(null)
+  const [showSavedSearchesDropdown, setShowSavedSearchesDropdown] = useState(false)
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<{[key: string]: boolean}>({})
   const [profileStatus, setProfileStatus] = useState<{[key: string]: string}>({})
   const [showSortDropdown, setShowSortDropdown] = useState(false)
@@ -308,6 +310,10 @@ export default function ShortlistPage() {
         let url = `${apiUrl}/api/shortlist/all`
         if (selectedProjectId) {
           url = `${apiUrl}/api/shortlist/project/${selectedProjectId}`
+          // Add saved search filter if selected
+          if (selectedSavedSearchId) {
+            url += `?savedSearchId=${selectedSavedSearchId}`
+          }
         }
         
         const response = await fetch(url, {
@@ -332,7 +338,7 @@ export default function ShortlistPage() {
     }
 
     fetchShortlistedProfiles()
-  }, [selectedProjectId])
+  }, [selectedProjectId, selectedSavedSearchId])
 
   const handleCreateProject = async () => {
     if (projectName.trim()) {
@@ -394,6 +400,8 @@ export default function ShortlistPage() {
         onSavedSearchClick={handleSavedSearchClick}
         selectedProjectId={selectedProjectId}
         currentSearchQuery={searchQuery}
+        selectedSavedSearchId={selectedSavedSearchId}
+        onSavedSearchSelect={setSelectedSavedSearchId}
       />
 
       <div 
@@ -427,6 +435,8 @@ export default function ShortlistPage() {
               display: 'flex',
               padding: '16px',
               alignItems: 'center',
+              position: 'relative',
+              zIndex : 3000,
               gap: '12px',
               alignSelf: 'stretch',
               borderRadius: '12px',
@@ -438,6 +448,8 @@ export default function ShortlistPage() {
             <button
               onClick={() => setShowProjectDropdown(!showProjectDropdown)}
               style={{
+                position: 'relative',
+                zIndex: 4000,
                 display: 'flex',
                 padding: '4px 8px',
                 justifyContent: 'center',
@@ -468,33 +480,133 @@ export default function ShortlistPage() {
 </svg>
             </button>
             
-            <span 
-            className='ml-[12px]'
-            style={{ 
-              display: '-webkit-box',
-              WebkitBoxOrient: 'vertical',
-              WebkitLineClamp: 1,
-              flex: '1 0 0',
-              overflow: 'hidden',
-              color: '#FFF',
-              fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-              textOverflow: 'ellipsis',
-              fontSize: '16px',
-              fontStyle: 'normal',
-              fontWeight: 500,
-              lineHeight: '24px'
-            }}>
-              {shortlistedProfiles.length > 0 
-                ? `${shortlistedProfiles.length} shortlisted profiles`
-                : '2 shortlisted profiles'
-              }
-            </span>
+            <div style={{ position: 'relative', flex: '1 0 0', marginLeft: '12px' }}>
+              <button
+                onClick={() => setShowSavedSearchesDropdown(!showSavedSearchesDropdown)}
+                style={{
+                  position: 'relative',
+                  zIndex: 400,
+                  display: 'flex',
+                  padding: '0',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <span 
+                  style={{ 
+                    display: '-webkit-box',
+                    WebkitBoxOrient: 'vertical',
+                    WebkitLineClamp: 1,
+                    flex: '1 0 0',
+                    overflow: 'hidden',
+                    color: '#FFF',
+                    fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                    textOverflow: 'ellipsis',
+                    fontSize: '16px',
+                    fontStyle: 'normal',
+                    fontWeight: 500,
+                    lineHeight: '24px',
+                    textAlign: 'left'
+                  }}>
+                  {selectedSavedSearchId 
+                    ? savedSearches.find(s => s._id === selectedSavedSearchId)?.query || `${shortlistedProfiles.length} shortlisted profiles`
+                    : `${shortlistedProfiles.length > 0 ? shortlistedProfiles.length : 2} shortlisted profiles`
+                  }
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  style={{
+                    transition: 'transform 0.18s ease',
+                    transform: showSavedSearchesDropdown ? 'rotate(180deg)' : 'rotate(0deg)'
+                  }}
+                >
+                  <path d="M18 9.00005C18 9.00005 13.5811 15 12 15C10.4188 15 6 9 6 9" stroke="#A0A0AB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
 
-          
-
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-  <path d="M18 9.00005C18 9.00005 13.5811 15 12 15C10.4188 15 6 9 6 9" stroke="#A0A0AB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+              {/* Saved Searches Dropdown */}
+              {showSavedSearchesDropdown && savedSearches.length > 0 && (
+                <div
+                className='absolute top-8 right-0 -left-30'
+                  style={{
+                  
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: '0.5px solid #26272B',
+                    background: '#121214',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.45)',
+                    zIndex: 100,
+                    width : '1290px',
+                    maxHeight: '420px',
+                    overflowY: 'auto'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {[...savedSearches]
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .map((search) => (
+                      <button
+                        key={search._id}
+                        onClick={() => {
+                          setSelectedSavedSearchId(selectedSavedSearchId === search._id ? null : search._id)
+                          setSearchQuery(search.query)
+                          setShowSavedSearchesDropdown(false)
+                        }}
+                        style={{
+                          display: 'flex',
+                          padding: '12px 14px',
+                          alignItems: 'center',
+                          gap: '10px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: selectedSavedSearchId === search._id ? '#1F1F22' : 'transparent',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedSavedSearchId !== search._id) {
+                            e.currentTarget.style.background = '#1C1C20'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedSavedSearchId !== search._id) {
+                            e.currentTarget.style.background = 'transparent'
+                          }
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M3 8C3 5.239 5.239 3 8 3C9.38071 3 10.6261 3.6789 11.3858 4.72632M13 8C13 10.761 10.761 13 8 13C6.3934 13 5.04799 12.2237 4.27671 11.0021M10 5.5L13 2.5M3 13.5L5 11.5" stroke="#A48AFB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span style={{
+                          color: '#FFF',
+                          fontFamily: '"Inter Display", sans-serif',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          lineHeight: '20px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          flex: 1
+                        }}>
+                          {search.query}
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Tabs and Search */}
@@ -1480,8 +1592,8 @@ export default function ShortlistPage() {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto w-full" style={{ position: 'relative', overflow: 'visible' }}>
-              <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+            <div className="w-full" style={{ position: 'relative' }}>
+              <table className="w-full" style={{ borderCollapse: 'collapse', position: 'relative' }}>
                 <thead>
                   <tr style={{ 
                     display: 'flex',
@@ -1504,112 +1616,220 @@ export default function ShortlistPage() {
                         onChange={toggleSelectAll} 
                       />
                     </th>
-                    <th style={{ 
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px 24px',
-                      height: '100%',
-                      borderRight: '0.5px solid #26272B',
-                      color: '#70707B', 
-                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                      fontFamily: '"Inter Display", sans-serif',
-                      fontSize: '12px', 
-                      fontStyle: 'normal',
-                      fontWeight: 600,
-                      lineHeight: '18px',
-                      textAlign: 'left'
-                    }}>
+                    <th 
+                      className="group"
+                      style={{ 
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 24px',
+                        height: '100%',
+                        borderRight: '0.5px solid #26272B',
+                        color: '#70707B', 
+                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                        fontFamily: '"Inter Display", sans-serif',
+                        fontSize: '12px', 
+                        fontStyle: 'normal',
+                        fontWeight: 600,
+                        lineHeight: '18px',
+                        textAlign: 'left',
+                        position: 'relative'
+                      }}>
                       Name
+                      <div 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '2px',
+                          height: '16px',
+                          flexShrink: 0,
+                          borderRadius: '9999px',
+                          background: '#51525C',
+                          cursor: 'col-resize'
+                        }}
+                      />
                     </th>
-                    <th style={{ 
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px 24px',
-                      height: '100%',
-                      borderRight: '0.5px solid #26272B',
-                      color: '#70707B', 
-                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                      fontFamily: '"Inter Display", sans-serif',
-                      fontSize: '12px', 
-                      fontStyle: 'normal',
-                      fontWeight: 600,
-                      lineHeight: '18px',
-                      textAlign: 'left'
-                    }}>
+                    <th 
+                      className="group"
+                      style={{ 
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 24px',
+                        height: '100%',
+                        borderRight: '0.5px solid #26272B',
+                        color: '#70707B', 
+                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                        fontFamily: '"Inter Display", sans-serif',
+                        fontSize: '12px', 
+                        fontStyle: 'normal',
+                        fontWeight: 600,
+                        lineHeight: '18px',
+                        textAlign: 'left',
+                        position: 'relative'
+                      }}>
                       Socials
+                      <div 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '2px',
+                          height: '16px',
+                          flexShrink: 0,
+                          borderRadius: '9999px',
+                          background: '#51525C',
+                          cursor: 'col-resize'
+                        }}
+                      />
                     </th>
-                    <th style={{ 
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px 24px',
-                      height: '100%',
-                      borderRight: '0.5px solid #26272B',
-                      color: '#70707B', 
-                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                      fontFamily: '"Inter Display", sans-serif',
-                      fontSize: '12px', 
-                      fontStyle: 'normal',
-                      fontWeight: 600,
-                      lineHeight: '18px',
-                      textAlign: 'left'
-                    }}>
+                    <th 
+                      className="group"
+                      style={{ 
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 24px',
+                        height: '100%',
+                        borderRight: '0.5px solid #26272B',
+                        color: '#70707B', 
+                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                        fontFamily: '"Inter Display", sans-serif',
+                        fontSize: '12px', 
+                        fontStyle: 'normal',
+                        fontWeight: 600,
+                        lineHeight: '18px',
+                        textAlign: 'left',
+                        position: 'relative'
+                      }}>
                       Status
+                      <div 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '2px',
+                          height: '16px',
+                          flexShrink: 0,
+                          borderRadius: '9999px',
+                          background: '#51525C',
+                          cursor: 'col-resize'
+                        }}
+                      />
                     </th>
-                    <th style={{ 
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px 24px',
-                      height: '100%',
-                      borderRight: '0.5px solid #26272B',
-                      color: '#70707B', 
-                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                      fontFamily: '"Inter Display", sans-serif',
-                      fontSize: '12px', 
-                      fontStyle: 'normal',
-                      fontWeight: 600,
-                      lineHeight: '18px',
-                      textAlign: 'left'
-                    }}>
+                    <th 
+                      className="group"
+                      style={{ 
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 24px',
+                        height: '100%',
+                        borderRight: '0.5px solid #26272B',
+                        color: '#70707B', 
+                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                        fontFamily: '"Inter Display", sans-serif',
+                        fontSize: '12px', 
+                        fontStyle: 'normal',
+                        fontWeight: 600,
+                        lineHeight: '18px',
+                        textAlign: 'left',
+                        position: 'relative'
+                      }}>
                       Date
+                      <div 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '2px',
+                          height: '16px',
+                          flexShrink: 0,
+                          borderRadius: '9999px',
+                          background: '#51525C',
+                          cursor: 'col-resize'
+                        }}
+                      />
                     </th>
-                    <th style={{ 
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px 24px',
-                      height: '100%',
-                      borderRight: '0.5px solid #26272B',
-                      color: '#70707B', 
-                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                      fontFamily: '"Inter Display", sans-serif',
-                      fontSize: '12px', 
-                      fontStyle: 'normal',
-                      fontWeight: 600,
-                      lineHeight: '18px',
-                      textAlign: 'left'
-                    }}>
+                    <th 
+                      className="group"
+                      style={{ 
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 24px',
+                        height: '100%',
+                        borderRight: '0.5px solid #26272B',
+                        color: '#70707B', 
+                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                        fontFamily: '"Inter Display", sans-serif',
+                        fontSize: '12px', 
+                        fontStyle: 'normal',
+                        fontWeight: 600,
+                        lineHeight: '18px',
+                        textAlign: 'left',
+                        position: 'relative'
+                      }}>
                       Company
+                      <div 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '2px',
+                          height: '16px',
+                          flexShrink: 0,
+                          borderRadius: '9999px',
+                          background: '#51525C',
+                          cursor: 'col-resize'
+                        }}
+                      />
                     </th>
-                    <th style={{ 
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px 24px',
-                      height: '100%',
-                      color: '#70707B', 
-                      fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
-                      fontFamily: '"Inter Display", sans-serif',
-                      fontSize: '12px', 
-                      fontStyle: 'normal',
-                      fontWeight: 600,
-                      lineHeight: '18px',
-                      textAlign: 'left'
-                    }}>
+                    <th 
+                      className="group"
+                      style={{ 
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 24px',
+                        height: '100%',
+                        color: '#70707B', 
+                        fontFeatureSettings: "'case' on, 'cv01' on, 'cv08' on, 'cv09' on, 'cv11' on, 'cv13' on",
+                        fontFamily: '"Inter Display", sans-serif',
+                        fontSize: '12px', 
+                        fontStyle: 'normal',
+                        fontWeight: 600,
+                        lineHeight: '18px',
+                        textAlign: 'left',
+                        position: 'relative'
+                      }}>
                       Location
+                      <div 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '2px',
+                          height: '16px',
+                          flexShrink: 0,
+                          borderRadius: '9999px',
+                          background: '#51525C',
+                          cursor: 'col-resize'
+                        }}
+                      />
                     </th>
                   </tr>
                 </thead>
@@ -1645,7 +1865,7 @@ export default function ShortlistPage() {
                             background: '#0E0E10',
                             position: 'relative',
                             overflow: 'visible',
-                            zIndex: 1
+                            zIndex: statusDropdownOpen[item._id] ? 1000 : 1
                           }}
                           className="hover:bg-[#131316] transition-colors"
                         >
@@ -1723,8 +1943,7 @@ export default function ShortlistPage() {
                             height: '100%',
                             borderRight: '0.5px solid #26272B',
                             position: 'relative',
-                            overflow: 'visible',
-                            zIndex: statusDropdownOpen[item._id] ? 9998 : 10
+                            overflow: 'visible'
                           }}>
                             <div data-status-dropdown style={{ position: 'relative', width: '100%' }}>
                               <button
@@ -1770,8 +1989,8 @@ export default function ShortlistPage() {
                                     borderRadius: '8px',
                                     border: '0.5px solid #26272B',
                                     background: '#1A1A1E',
-                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                                    zIndex: 9999,
+                                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
+                                    zIndex: 1001,
                                     minWidth: '140px'
                                   }}
                                   onClick={(e) => e.stopPropagation()}
